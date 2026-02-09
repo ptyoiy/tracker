@@ -14,7 +14,8 @@
       "!dist",
       "!build",
       "!types",
-      "!src/stories"
+      "!src/stories",
+      "!storybook-static"
     ]
   },
   "formatter": {
