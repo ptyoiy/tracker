@@ -11,7 +11,12 @@
     "format": "biome format --write .",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "prepare": "husky"
+    "prepare": "husky",
+    "test": "vitest --project=unit",
+    "test:api": "vitest --project=unit-api",
+    "test:unit": "vitest --project=unit",
+    "test:unit:watch": "vitest --project=unit --watch",
+    "test:storybook": "vitest --project=storybook"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

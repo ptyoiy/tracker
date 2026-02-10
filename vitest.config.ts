@@ -13,6 +13,27 @@ const dirname =
 export default defineConfig({
   test: {
     projects: [
+      // 유닛 테스트
+      {
+        test: {
+          name: "unit",
+          environment: "node",
+          globals: true,
+          include: ["src/**/*.{test,spec}.{ts,tsx}"],
+          exclude: ["**/node_modules/**", "**/.next/**"],
+        },
+      },
+      // 유닛 테스트 (실제 api 호출)
+      {
+        test: {
+          name: "unit-api",
+          environment: "node",
+          globals: true,
+          include: ["src/**/*.api.test.ts"],
+          exclude: ["**/node_modules/**", "**/.next/**"],
+        },
+      },
+      // 스토리북 테스트(통합, E2E)
       {
         extends: true,
         plugins: [
