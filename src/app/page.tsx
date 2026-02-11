@@ -1,6 +1,7 @@
 "use client";
 
 import { useAtom } from "jotai";
+import { KakaoLoader } from "@/components/KakaoLoader";
 import { MapView } from "@/components/MapView";
 import { ObservationForm } from "@/components/ObservationForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,6 +13,7 @@ export default function Home() {
   return (
     <div className="h-dvh flex flex-col bg-background">
       {/* 헤더 */}
+      <KakaoLoader />
       <header className="shrink-0 px-4 py-3 border-b">
         <h1 className="text-lg font-bold">210 트래커</h1>
       </header>
