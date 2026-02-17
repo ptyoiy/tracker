@@ -1,4 +1,6 @@
 // src/shared/lib/speed.ts
+import { SPEED_THRESHOLD } from "@/shared/config/constant";
+
 export type SpeedCategory = "walking" | "transit" | "vehicle";
 
 export function calcSpeedKmh(
@@ -10,6 +12,7 @@ export function calcSpeedKmh(
 }
 
 export function inferSpeedCategory(speedKmh: number): SpeedCategory {
-  // TODO: constants에서 threshold import해서 사용
-  return "walking";
+  if (speedKmh <= SPEED_THRESHOLD.WALKING_MAX) return "walking";
+  if (speedKmh <= SPEED_THRESHOLD.TRANSIT_MAX) return "transit";
+  return "vehicle";
 }

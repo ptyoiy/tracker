@@ -1,4 +1,3 @@
-// src/types/cctv.ts
 import type { LatLng } from "./common";
 
 // CCTV 메타데이터

@@ -2,8 +2,8 @@
 
 // 지도 기본 값
 export const DEFAULT_CENTER = {
-  lat: 37.5665, // 서울 시청 근처
-  lng: 126.978,
+  lat: 37.48879632053899,
+  lng: 127.08430701903556,
 };
 export const DEFAULT_ZOOM = 7;
 
