@@ -15,9 +15,18 @@
       "!build",
       "!types",
       "!src/stories",
-      "!storybook-static"
+      "!storybook-static",
+      "src/**/*.api.test.ts"
     ]
   },
+  "overrides": [
+    {
+      "includes": ["**/*.test.ts", "**/*.test.tsx"],
+      "linter": {
+        "enabled": false
+      }
+    }
+  ],
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
@@ -29,6 +38,9 @@
       "recommended": true,
       "suspicious": {
         "noUnknownAtRules": "off"
+      },
+      "correctness": {
+        "noUnusedImports": "error"
       }
     },
     "domains": {

@@ -17,7 +17,7 @@ if (!parsed.success) {
   // 초기 단계라면 바로 throw해서 빠르게 깨지게
   // TODO: 나중에 로깅 추가 가능
   throw new Error(
-    `Invalid environment variables: ${JSON.stringify(parsed.error.format())}`,
+    `Invalid environment variables: ${JSON.stringify(z.treeifyError(parsed.error))}`,
   );
 }
 

@@ -1,4 +1,3 @@
-// src/types/analyze.ts
 import type { LatLng } from "./common";
 import type { Observation } from "./observation";
 

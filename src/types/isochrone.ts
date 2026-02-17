@@ -1,4 +1,3 @@
-// src/types/isochrone.ts
 import type { LatLng } from "./common";
 
 // Isochrone API
