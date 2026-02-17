@@ -9,22 +9,32 @@ const dirname =
     ? __dirname
     : path.dirname(fileURLToPath(import.meta.url));
 
+const alias = {
+  "@": path.resolve(dirname, "./src"),
+};
+
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
   test: {
     projects: [
       // 유닛 테스트
       {
+        resolve: { alias },
         test: {
           name: "unit",
-          environment: "node",
+          environment: "jsdom",
           globals: true,
           include: ["src/**/*.{test,spec}.{ts,tsx}"],
-          exclude: ["**/node_modules/**", "**/.next/**"],
+          exclude: [
+            "**/node_modules/**",
+            "**/.next/**",
+            "src/**/*.api.test.ts",
+          ],
         },
       },
       // 유닛 테스트 (실제 api 호출)
       {
+        resolve: { alias },
         test: {
           name: "unit-api",
           environment: "node",
