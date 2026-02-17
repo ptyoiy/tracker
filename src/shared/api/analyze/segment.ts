@@ -1,6 +1,6 @@
 import { differenceInSeconds } from "date-fns";
 import { getDistance } from "geolib";
-import type { Observation } from "@/types";
+import type { Observation } from "@/types/observation";
 
 export function analyzeSegment(from: Observation, to: Observation) {
   const distance = getDistance(
