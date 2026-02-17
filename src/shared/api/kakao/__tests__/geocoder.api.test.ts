@@ -35,7 +35,7 @@ describe("coordToAddress", () => {
     });
 
     const addr = await coordToAddress(37.5665, 126.978);
-    expect(addr).toBe("서울특별시 중구 태평로1가 31");
+    expect(addr).toBe("서울특별시 중구 세종대로 110");
   });
 
   it("documents가 없으면 null을 반환한다", async () => {

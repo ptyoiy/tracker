@@ -13,15 +13,9 @@ type Props = {
   index: number;
   form: UseFormReturn<ObservationFormValues>;
   onRemove: () => void;
-  canRemove: boolean;
 };
 
-export function ObservationFormFields({
-  index,
-  form,
-  onRemove,
-  canRemove,
-}: Props) {
+export function ObservationFormFields({ index, form, onRemove }: Props) {
   const {
     register,
     control,
@@ -96,11 +90,9 @@ export function ObservationFormFields({
     <div className="border rounded-md p-3 space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium">관측 #{index + 1}</span>
-        {canRemove && (
-          <Button type="button" variant="ghost" size="icon" onClick={onRemove}>
-            ✕
-          </Button>
-        )}
+        <Button type="button" variant="ghost" size="icon" onClick={onRemove}>
+          ✕
+        </Button>
       </div>
 
       {/* 위경도 */}

@@ -80,7 +80,6 @@ export function ObservationForm() {
               index={index}
               form={form}
               onRemove={() => handleRemove(index)}
-              canRemove={fields.length > 2}
             />
           ))}
 

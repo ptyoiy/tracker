@@ -2,16 +2,15 @@
 
 import { HTTPError } from "ky";
 import { type NextRequest, NextResponse } from "next/server";
-import { filterRoutesByTime } from "@/lib/analyze/filter";
-import { analyzeSegment } from "@/lib/analyze/segment";
-import { getTmapDrivingRoute } from "@/lib/tmap/driving";
-import { getTmapPedestrianRoute } from "@/lib/tmap/pedestrian";
-import { analyzeRequestSchema } from "@/types";
+import { filterRoutesByTime } from "@/shared/api/analyze/filter";
+import { analyzeSegment } from "@/shared/api/analyze/segment";
+import { getTmapDrivingRoute } from "@/shared/api/tmap/driving";
+import { getTmapPedestrianRoute } from "@/shared/api/tmap/pedestrian";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { observations, futureMinutes } = analyzeRequestSchema.parse(body);
+    const { observations } = analyzeRequestSchema.parse(body);
 
     const sorted = [...observations];
 
