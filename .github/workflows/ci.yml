@@ -28,7 +28,7 @@ jobs:
         run: pnpm tsc --noEmit
 
       - name: Unit tests
-        run: pnpm vitest run
+        run: pnpm run test:unit
 
       - name: Build Storybook
         run: pnpm build-storybook
