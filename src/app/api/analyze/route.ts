@@ -6,7 +6,7 @@ import { filterRoutesByTime } from "@/lib/analyze/filter";
 import { analyzeSegment } from "@/lib/analyze/segment";
 import { getTmapDrivingRoute } from "@/lib/tmap/driving";
 import { getTmapPedestrianRoute } from "@/lib/tmap/pedestrian";
-import { analyzeRequestSchema } from "@/types/analyze";
+import { analyzeRequestSchema } from "@/types";
 
 export async function POST(request: NextRequest) {
   try {

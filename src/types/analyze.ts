@@ -1,37 +1,48 @@
 // src/types/analyze.ts
-import { z } from "zod";
+import type { LatLng } from "./common";
+import type { Observation } from "./observation";
 
-export const observationSchema = z.object({
-  lat: z.number().min(33).max(38),
-  lng: z.number().min(124).max(132),
-  timestamp: z.string().datetime(),
-});
+// 분석 요청/응답 (route-analysis API)
+export type TransportMode = "walking" | "transit" | "vehicle";
 
-export const analyzeRequestSchema = z.object({
-  observations: z.array(observationSchema).min(2).max(7),
-  futureMinutes: z.number().min(1).max(60).optional().default(10),
-});
+export type AnalyzeRequest = {
+  observations: Observation[]; // min 2, max 7
+  futureMinutes: number; // 1~60
+};
 
-export type Observation = z.infer<typeof observationSchema>;
-export type AnalyzeRequest = z.infer<typeof analyzeRequestSchema>;
+// 멀티모달 경로 정보 (TMAP 응답 가공)
+export type RouteLegMode = "WALK" | "BUS" | "SUBWAY" | "CAR";
 
-export interface SegmentAnalysis {
+export type RouteLeg = {
+  mode: RouteLegMode;
+  distanceKm: number;
+  durationSeconds: number;
+  polyline: LatLng[]; // 디코딩된 경로 좌표
+};
+
+export type RouteInfo = {
+  id: string;
+  totalDistanceKm: number;
+  totalDurationSeconds: number;
+  legs: RouteLeg[];
+  primaryMode: TransportMode; // walking/transit/vehicle
+};
+
+// 구간별 분석 결과
+export type SegmentAnalysis = {
+  id: string; // `${fromIndex}-${toIndex}` 등
   from: Observation;
   to: Observation;
-  distance: number; // 미터
-  duration: number; // 초
-  avgSpeed: number; // km/h
-  transportMode: "walking" | "vehicle" | "transit";
+  distanceKm: number;
+  durationSeconds: number;
+  averageSpeedKmh: number;
+  inferredMode: TransportMode;
+  // TMAP 기반 후보 경로 요약
   routes: RouteInfo[];
-}
+};
 
-export interface RouteInfo {
-  mode: "walking" | "driving";
-  polyline: number[][]; // [lng, lat][]
-  estimatedDuration: number; // 초
-  distance: number; // 미터
-}
-
-export interface AnalyzeResponse {
+export type AnalyzeResponse = {
   segments: SegmentAnalysis[];
-}
+  fallbackUsed?: boolean;
+  errors?: string;
+};

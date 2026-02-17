@@ -1,7 +1,7 @@
 // src/store/atoms.ts
 import { atom } from "jotai";
-import type { TmapDrivingResponse } from "@/lib/tmap/driving";
-import type { AnalyzeResponse, Observation } from "@/types/analyze";
+import type { TmapDrivingResponse } from "@/shared/api/tmap/driving";
+import type { AnalyzeResponse, Observation } from "@/types";
 
 export const observationsAtom = atom<Observation[]>([]);
 export const analysisResultAtom = atom<AnalyzeResponse | null>(null);

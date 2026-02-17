@@ -1,10 +1,10 @@
 "use client";
 
 import { useAtom } from "jotai";
-import { KakaoLoader } from "@/components/KakaoLoader";
-import { MapView } from "@/components/MapView";
-import { ObservationForm } from "@/components/ObservationForm";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MapView } from "@/features/map-view/ui/MapView";
+import { ObservationForm } from "@/features/observation-input/ui/ObservationForm";
+import { KakaoLoader } from "@/shared/lib/KakaoLoader";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import { activeTabAtom } from "@/store/atoms";
 
 export default function Home() {
