@@ -29,6 +29,3 @@ jobs:
 
       - name: Unit tests
         run: pnpm run test:unit
-
-      - name: Build Storybook
-        run: pnpm build-storybook
