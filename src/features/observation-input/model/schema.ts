@@ -1,6 +1,8 @@
 import { z } from "zod";
 
-export const observationSchema = z.object({
+const datetimeLocalRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
+
+export const observationRawSchema = z.object({
   lat: z
     .number({ error: "위도를 입력해주세요" })
     .min(33, "33~38 사이여야 합니다")
@@ -9,14 +11,19 @@ export const observationSchema = z.object({
     .number({ error: "경도를 입력해주세요" })
     .min(124, "124~132 사이여야 합니다")
     .max(132, "124~132 사이여야 합니다"),
-  timestamp: z.iso.datetime({ message: "올바른 시간 형식이 아닙니다" }),
+  timestamp: z
+    .string()
+    .regex(
+      datetimeLocalRegex,
+      "올바른 시간 형식이 아닙니다. (예: 2026-02-18T16:22)",
+    ),
   address: z.string().optional(),
   label: z.string().optional(),
 });
 
 export const formSchema = z.object({
   observations: z
-    .array(observationSchema)
+    .array(observationRawSchema)
     .min(2, "최소 2개의 관측 지점이 필요합니다")
     .max(15),
   futureMinutes: z
@@ -27,4 +34,10 @@ export const formSchema = z.object({
     .nonoptional(),
 });
 
-export type ObservationFormValues = z.infer<typeof formSchema>;
+export type ObservationFormValues = {
+  observations: (Omit<z.infer<typeof observationRawSchema>, "timestamp"> & {
+    timestamp: string; // ISO
+  })[];
+  futureMinutes: number;
+};
+export type ObservationFormValuesRaw = z.infer<typeof formSchema>;

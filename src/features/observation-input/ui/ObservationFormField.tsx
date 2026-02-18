@@ -1,17 +1,15 @@
-// ObservationFormFields.tsx
+// src/features/observation-input/ui/ObservationFormField.tsx
 "use client";
 
-import { useSetAtom } from "jotai";
 import { Controller, type UseFormReturn } from "react-hook-form";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
-import { observationsAtom } from "../model/atoms";
-import type { ObservationFormValues } from "../model/schema";
+import type { ObservationFormValuesRaw } from "../model/schema";
 import { type LocationResult, LocationSearch } from "./LocationSearch";
 
 type Props = {
   index: number;
-  form: UseFormReturn<ObservationFormValues>;
+  form: UseFormReturn<ObservationFormValuesRaw>;
   onRemove: () => void;
 };
 
@@ -20,77 +18,21 @@ export function ObservationFormFields({ index, form, onRemove }: Props) {
     register,
     control,
     formState: { errors },
-    watch,
-    setValue,
   } = form;
 
-  const setObservations = useSetAtom(observationsAtom);
-
-  const tsPath = `observations.${index}.timestamp` as const;
-  const currentIso = watch(tsPath);
-  console.log({ currentIso });
-
-  const currentDateTimeLocal =
-    currentIso && !Number.isNaN(new Date(currentIso).getTime())
-      ? (() => {
-          const d = new Date(currentIso);
-          const offset = d.getTimezoneOffset() * 60000;
-          return new Date(d.getTime() - offset).toISOString().slice(0, 16);
-        })()
-      : "";
-
-  const handleDateTimeChange = (value: string) => {
-    if (!value) return;
-    const d = new Date(value);
-    setValue(tsPath, d.toISOString(), {
-      shouldValidate: true,
-      shouldDirty: true,
-      shouldTouch: true,
-    });
-  };
-
   const obsErrors = errors.observations?.[index];
-
-  const applyLocation = (r: LocationResult) => {
-    // RHF 값 갱신
-    setValue(`observations.${index}.label`, r.label, {
-      shouldValidate: true,
-      shouldDirty: true,
-    });
-    setValue(`observations.${index}.address`, r.address, {
-      shouldValidate: true,
-      shouldDirty: true,
-    });
-    setValue(`observations.${index}.lat`, r.lat, {
-      shouldValidate: true,
-      shouldDirty: true,
-    });
-    setValue(`observations.${index}.lng`, r.lng, {
-      shouldValidate: true,
-      shouldDirty: true,
-    });
-
-    // 지도(Jotai)도 즉시 갱신
-    setObservations((prev) => {
-      const next = [...prev];
-      next[index] = {
-        ...(next[index] ?? {
-          timestamp: new Date().toISOString(),
-        }),
-        lat: r.lat,
-        lng: r.lng,
-        address: r.address,
-        label: r.label,
-      };
-      return next;
-    });
-  };
 
   return (
     <div className="border rounded-md p-3 space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium">관측 #{index + 1}</span>
-        <Button type="button" variant="ghost" size="icon" onClick={onRemove}>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={onRemove}
+          aria-label={`관측 #${index + 1} 삭제`}
+        >
           ✕
         </Button>
       </div>
@@ -105,10 +47,14 @@ export function ObservationFormFields({ index, form, onRemove }: Props) {
             id={`lat-${index}`}
             type="number"
             step="any"
+            inputMode="decimal"
             {...register(`observations.${index}.lat`, { valueAsNumber: true })}
+            aria-invalid={obsErrors?.lat ? "true" : "false"}
           />
           {obsErrors?.lat && (
-            <p className="text-xs text-red-500">{obsErrors.lat.message}</p>
+            <p className="text-xs text-red-500" role="alert">
+              {obsErrors.lat.message}
+            </p>
           )}
         </div>
 
@@ -120,15 +66,19 @@ export function ObservationFormFields({ index, form, onRemove }: Props) {
             id={`lng-${index}`}
             type="number"
             step="any"
+            inputMode="decimal"
             {...register(`observations.${index}.lng`, { valueAsNumber: true })}
+            aria-invalid={obsErrors?.lng ? "true" : "false"}
           />
           {obsErrors?.lng && (
-            <p className="text-xs text-red-500">{obsErrors.lng.message}</p>
+            <p className="text-xs text-red-500" role="alert">
+              {obsErrors.lng.message}
+            </p>
           )}
         </div>
       </div>
 
-      {/* 시간 */}
+      {/* 시간 (datetime-local, RHF에 그대로 맡김) */}
       <div className="space-y-1">
         <label htmlFor={`ts-${index}`} className="text-xs font-medium">
           시간
@@ -136,11 +86,13 @@ export function ObservationFormFields({ index, form, onRemove }: Props) {
         <Input
           id={`ts-${index}`}
           type="datetime-local"
-          value={currentDateTimeLocal}
-          onChange={(e) => handleDateTimeChange(e.target.value)}
+          {...register(`observations.${index}.timestamp`)}
+          aria-invalid={obsErrors?.timestamp ? "true" : "false"}
         />
         {obsErrors?.timestamp && (
-          <p className="text-xs text-red-500">{obsErrors.timestamp.message}</p>
+          <p className="text-xs text-red-500" role="alert">
+            {obsErrors.timestamp.message}
+          </p>
         )}
       </div>
 
@@ -158,13 +110,31 @@ export function ObservationFormFields({ index, form, onRemove }: Props) {
               id={`address-${index}`}
               value={field.value ?? ""}
               onChange={(v) => field.onChange(v)}
-              onSelect={applyLocation}
+              onSelect={(r: LocationResult) => {
+                // RHF 값만 갱신, atom은 submit 시 동기화
+                form.setValue(`observations.${index}.label`, r.label, {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                });
+                form.setValue(`observations.${index}.address`, r.address, {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                });
+                form.setValue(`observations.${index}.lat`, r.lat, {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                });
+                form.setValue(`observations.${index}.lng`, r.lng, {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                });
+              }}
             />
           )}
         />
 
         {obsErrors?.address && (
-          <p className="text-xs text-red-500">
+          <p className="text-xs text-red-500" role="alert">
             {obsErrors.address.message as string}
           </p>
         )}

@@ -14,19 +14,37 @@ import {
   observationFormAtom,
   observationsAtom,
 } from "../model/atoms";
-import { formSchema, type ObservationFormValues } from "../model/schema";
+import {
+  formSchema,
+  type ObservationFormValues,
+  type ObservationFormValuesRaw,
+} from "../model/schema";
 import { ObservationFormFields } from "./ObservationFormField";
 
+// datetime-local 형식으로 초기값 생성
+function toLocalDatetimeInput(iso?: string) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const offset = d.getTimezoneOffset() * 60000;
+  return new Date(d.getTime() - offset).toISOString().slice(0, 16);
+}
+
 export function ObservationForm() {
-  const [observations, setObservations] = useAtom(observationsAtom);
+  const [observationsAtomValue, setObservations] = useAtom(observationsAtom);
   const currentFutureMinutes = useAtomValue(futureMinutesAtom);
   const setObservationForm = useSetAtom(observationFormAtom);
   const { analyze } = useAnalyze();
 
-  const form = useForm<ObservationFormValues>({
+  // RHF는 datetime-local 문자열을 사용
+  const form = useForm<ObservationFormValuesRaw>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      observations,
+      observations: observationsAtomValue.map((o) => ({
+        ...o,
+        // atom에는 ISO가 들어있다고 가정, 폼에는 로컬 문자열로 변환
+        timestamp: toLocalDatetimeInput(o.timestamp),
+      })),
       futureMinutes: currentFutureMinutes,
     },
     mode: "onBlur",
@@ -37,37 +55,58 @@ export function ObservationForm() {
     name: "observations",
   });
 
-  // 1) atom -> RHF: 지도 클릭 등으로 observationsAtom이 바뀌면 폼에 반영
+  // atom -> RHF: 지도 클릭 등으로 observationsAtom이 바뀌면 폼에 반영
   useEffect(() => {
-    console.log({ observations });
-    replace(observations);
-  }, [observations, replace]);
+    replace(
+      observationsAtomValue.map((o) => ({
+        ...o,
+        timestamp: toLocalDatetimeInput(o.timestamp),
+      })),
+    );
+  }, [observationsAtomValue, replace]);
 
   const watchObservations = form.watch("observations");
   const canSubmit = watchObservations.length >= 2;
 
-  const onSubmit = (values: ObservationFormValues) => {
-    setObservationForm(values);
-    void analyze(); // 분석 호출
+  const onSubmit = (values: ObservationFormValuesRaw) => {
+    // 1) datetime-local -> ISO 변환
+    const normalizedObservations: ObservationFormValues["observations"] =
+      values.observations.map((o) => ({
+        ...o,
+        timestamp: new Date(o.timestamp).toISOString(),
+      }));
+
+    const normalized: ObservationFormValues = {
+      observations: normalizedObservations,
+      futureMinutes: values.futureMinutes,
+    };
+
+    // 2) atom에 최종값 반영 (단일 방향: RHF -> atom)
+    setObservationForm(normalized);
+    setObservations(normalizedObservations);
+
+    // 3) 분석 호출
+    void analyze();
   };
 
-  // 관측 추가 버튼은 atom에도 반영
+  // 관측 추가 버튼 (폼만 건드림, atom은 submit 시 동기화)
   const handleAppend = () => {
+    const nowIso = new Date().toISOString();
+    const localNow = toLocalDatetimeInput(nowIso);
+
     const newObs = {
       lat: 37.5665,
       lng: 126.978,
-      timestamp: new Date().toISOString(),
+      timestamp: localNow,
       label: "",
       address: "",
     };
+
     append(newObs);
-    setObservations((prev) => [...prev, newObs]);
   };
 
-  // remove도 atom과 동기화
   const handleRemove = (index: number) => {
     remove(index);
-    setObservations((prev) => prev.filter((_, i) => i !== index));
   };
 
   return (
