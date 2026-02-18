@@ -1,5 +1,5 @@
-import type { SegmentAnalysis } from "@/types/analyze";
 import { atom } from "jotai";
+import type { SegmentAnalysis } from "@/types/analyze";
 
 export const segmentAnalysesAtom = atom<SegmentAnalysis[] | null>(null);
 
