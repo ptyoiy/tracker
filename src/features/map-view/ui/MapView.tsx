@@ -10,6 +10,8 @@ import {
 import { observationsAtom } from "@/features/observation-input/model/atoms";
 import { coordToAddress } from "@/shared/api/kakao/geocoder";
 import { DEFAULT_CENTER } from "@/shared/config/constant";
+import { IsochronePolygon } from "./IsoChronePolygon";
+import { IsochroneControls } from "./IsochroneControls";
 
 export function MapView() {
   const observations = useAtomValue(observationsAtom);
@@ -42,27 +44,31 @@ export function MapView() {
   };
 
   return (
-    <KakaoMap
-      center={last ? { lat: last.lat, lng: last.lng } : DEFAULT_CENTER}
-      style={{ width: "100%", height: "100%" }}
-      level={7}
-      onClick={handleMapClick}
-    >
-      {observations.map((obs, idx) => (
-        <div key={`${obs.lat}-${obs.lng}-${obs.timestamp}`}>
-          <MapMarker position={{ lat: obs.lat, lng: obs.lng }} />
+    <>
+      <KakaoMap
+        center={last ? { lat: last.lat, lng: last.lng } : DEFAULT_CENTER}
+        style={{ width: "100%", height: "100%" }}
+        level={7}
+        onClick={handleMapClick}
+      >
+        {observations.map((obs, idx) => (
+          <div key={`${obs.lat}-${obs.lng}-${obs.timestamp}`}>
+            <MapMarker position={{ lat: obs.lat, lng: obs.lng }} />
 
-          <CustomOverlayMap
-            position={{ lat: obs.lat, lng: obs.lng }}
-            xAnchor={0.5}
-            yAnchor={1.75} // 마커 위 쪽으로 살짝 띄우기
-          >
-            <div className="flex items-center justify-center w-5 h-5 rounded-full bg-black/80 text-[10px] text-white leading-none">
-              {idx + 1}
-            </div>
-          </CustomOverlayMap>
-        </div>
-      ))}
-    </KakaoMap>
+            <CustomOverlayMap
+              position={{ lat: obs.lat, lng: obs.lng }}
+              xAnchor={0.5}
+              yAnchor={1.75} // 마커 위 쪽으로 살짝 띄우기
+            >
+              <div className="flex items-center justify-center w-5 h-5 rounded-full bg-black/80 text-[10px] text-white leading-none">
+                {idx + 1}
+              </div>
+            </CustomOverlayMap>
+          </div>
+        ))}
+        <IsochronePolygon />
+      </KakaoMap>
+      <IsochroneControls />
+    </>
   );
 }

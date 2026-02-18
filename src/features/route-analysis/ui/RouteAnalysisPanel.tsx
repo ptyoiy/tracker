@@ -6,7 +6,7 @@ import {
   analyzeLoadingAtom,
   segmentAnalysesAtom,
 } from "../model/atoms";
-import { RouteCard } from "./routeCard";
+import { RouteCard } from "./RouteCard";
 
 export function RouteAnalysisPanel() {
   const segments = useAtomValue(segmentAnalysesAtom);
