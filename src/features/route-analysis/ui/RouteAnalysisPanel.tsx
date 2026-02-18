@@ -1,3 +1,4 @@
+// src/features/route-analysis/ui/RouteListPanel.tsx
 "use client";
 
 import { useAtomValue } from "jotai";
@@ -8,7 +9,7 @@ import {
 } from "../model/atoms";
 import { RouteCard } from "./RouteCard";
 
-export function RouteAnalysisPanel() {
+export function RouteListPanel() {
   const segments = useAtomValue(segmentAnalysesAtom);
   const loading = useAtomValue(analyzeLoadingAtom);
   const error = useAtomValue(analyzeErrorAtom);
@@ -27,10 +28,20 @@ export function RouteAnalysisPanel() {
     );
   }
 
+  const allRoutes = segments.flatMap((s) => s.candidateRoutes ?? []);
+
+  if (!allRoutes.length) {
+    return (
+      <div className="text-sm text-gray-500">
+        분석 결과에서 사용 가능한 경로 후보가 없습니다.
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-2">
-      {segments.map((s) => (
-        <RouteCard key={s.id} segment={s} />
+      {allRoutes.map((route) => (
+        <RouteCard key={route.id} route={route} />
       ))}
     </div>
   );

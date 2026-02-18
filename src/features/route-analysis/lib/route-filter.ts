@@ -5,7 +5,7 @@ export type DurationToleranceConfig = {
 };
 
 const DEFAULT_TOLERANCE: DurationToleranceConfig = {
-  ratioTolerance: 0.3,
+  ratioTolerance: 1,
 };
 
 export function filterByDurationTolerance(

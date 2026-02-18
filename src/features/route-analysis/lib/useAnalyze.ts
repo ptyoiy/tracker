@@ -1,6 +1,7 @@
+// src/features/route-analysis/lib/useAnalyze.ts
 "use client";
 
-// biome-ignore assist/source/organizeImports: <bug>
+import { useAtomValue, useSetAtom } from "jotai";
 import {
   futureMinutesAtom,
   observationsAtom,
@@ -9,10 +10,8 @@ import {
   analyzeErrorAtom,
   analyzeLoadingAtom,
   segmentAnalysesAtom,
-} from "@/features/route-analysis/model/atoms";
-import type { AnalyzeRequest, AnalyzeResponse } from "@/types/analyze";
-import { useAtomValue, useSetAtom } from "jotai";
-import { useCallback } from "react";
+  selectedRouteIdsAtom,
+} from "../model/atoms";
 
 export function useAnalyze() {
   const observations = useAtomValue(observationsAtom);
@@ -20,49 +19,53 @@ export function useAnalyze() {
   const setSegments = useSetAtom(segmentAnalysesAtom);
   const setLoading = useSetAtom(analyzeLoadingAtom);
   const setError = useSetAtom(analyzeErrorAtom);
+  const setSelectedIds = useSetAtom(selectedRouteIdsAtom);
 
-  const analyze = useCallback(async () => {
-    if (observations.length < 2) {
-      setError("관측 지점이 최소 2개 필요합니다.");
-      return;
-    }
+  const analyze = async () => {
+    if (observations.length < 2) return;
 
     setLoading(true);
     setError(null);
-
     try {
-      const payload: AnalyzeRequest = {
-        observations,
-        futureMinutes,
-      };
-
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ observations, futureMinutes }),
       });
 
-      const data = (await res.json()) as AnalyzeResponse;
+      const data = await res.json();
 
       if (!res.ok) {
-        setError(data.errors ?? "분석에 실패했습니다.");
+        setError(data.errors ?? "경로 분석에 실패했습니다.");
         setSegments(null);
+        setSelectedIds(new Set());
         return;
       }
+      console.log({ data }, { depth: null });
+      setSegments(data.segments ?? []);
 
-      setSegments(data.segments);
-      if (data.fallbackUsed) {
-        setError("TMAP 경로 대신 단순 추정 경로를 사용했습니다.");
+      // 기본 선택: 각 세그먼트의 최단 소요시간 경로 1개씩, 최대 3개
+      const initialSelected = new Set<string>();
+      for (const seg of data.segments ?? []) {
+        const routes = seg.candidateRoutes ?? [];
+        if (!routes.length) continue;
+        const best = [...routes].sort(
+          (a, b) => a.estimatedDurationSeconds - b.estimatedDurationSeconds,
+        )[0];
+        if (best && initialSelected.size < 3) {
+          initialSelected.add(best.id);
+        }
       }
+      setSelectedIds(initialSelected);
     } catch (e) {
-      setError(
-        e instanceof Error ? e.message : "알 수 없는 오류가 발생했습니다.",
-      );
+      console.error(e);
+      setError("경로 분석 중 오류가 발생했습니다.");
       setSegments(null);
+      setSelectedIds(new Set());
     } finally {
       setLoading(false);
     }
-  }, [observations, futureMinutes, setLoading, setError, setSegments]);
+  };
 
   return { analyze };
 }

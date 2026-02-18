@@ -1,8 +1,8 @@
 import { getDistanceKm } from "@/shared/lib/geo/distance";
 import { calcSpeedKmh, inferSpeedCategory } from "@/shared/lib/speed";
 import { getDurationSeconds } from "@/shared/lib/time/duration";
+import type { SegmentAnalysis } from "@/types/analyze";
 import type { Observation } from "@/types/observation";
-import type { SegmentAnalysis } from "../model/types";
 
 export function buildSegmentAnalyses(
   observations: Observation[],

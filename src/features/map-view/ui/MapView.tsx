@@ -10,16 +10,16 @@ import {
 import { observationsAtom } from "@/features/observation-input/model/atoms";
 import { coordToAddress } from "@/shared/api/kakao/geocoder";
 import { DEFAULT_CENTER } from "@/shared/config/constant";
+import { CCTVMarkers } from "./CCTVMarker";
 import { IsochronePolygon } from "./IsoChronePolygon";
 import { IsochroneControls } from "./IsochroneControls";
+import { RoutePolyline } from "./RoutePolyLine";
 
 export function MapView() {
   const observations = useAtomValue(observationsAtom);
   const setObservations = useSetAtom(observationsAtom);
 
   const last = observations[observations.length - 1];
-
-  console.log({ observations });
 
   const handleMapClick = async (
     _t: kakao.maps.Map,
@@ -36,7 +36,7 @@ export function MapView() {
       {
         lat,
         lng,
-        timestamp: new Date().toISOString(), // 항상 채우기
+        timestamp: new Date().toISOString(),
         label: address ?? "",
         address: address ?? "",
       },
@@ -45,6 +45,7 @@ export function MapView() {
 
   return (
     <>
+      <IsochroneControls />
       <KakaoMap
         center={last ? { lat: last.lat, lng: last.lng } : DEFAULT_CENTER}
         style={{ width: "100%", height: "100%" }}
@@ -58,7 +59,7 @@ export function MapView() {
             <CustomOverlayMap
               position={{ lat: obs.lat, lng: obs.lng }}
               xAnchor={0.5}
-              yAnchor={1.75} // 마커 위 쪽으로 살짝 띄우기
+              yAnchor={1.75}
             >
               <div className="flex items-center justify-center w-5 h-5 rounded-full bg-black/80 text-[10px] text-white leading-none">
                 {idx + 1}
@@ -66,9 +67,13 @@ export function MapView() {
             </CustomOverlayMap>
           </div>
         ))}
+        {/* 선택된 TMAP 경로 라인 */}
+        <RoutePolyline />
+
+        {/* Isochrone/CCTV */}
         <IsochronePolygon />
+        <CCTVMarkers />
       </KakaoMap>
-      <IsochroneControls />
     </>
   );
 }

@@ -1,92 +1,69 @@
+// src/features/route-analysis/ui/RouteCard.tsx
 "use client";
 
 import { useAtom } from "jotai";
-import { Card } from "@/shared/ui/card";
-import type { SegmentAnalysis } from "@/types/analyze";
+import type { RouteInfo } from "@/types/analyze";
 import { selectedRouteIdsAtom } from "../model/atoms";
 
 type Props = {
-  segment: SegmentAnalysis;
+  route: RouteInfo;
 };
 
-export function RouteCard({ segment }: Props) {
-  const [selectedRouteIds, setSelectedRouteIds] = useAtom(selectedRouteIdsAtom);
+function getPrimaryModeLabel(mode: RouteInfo["primaryMode"]) {
+  switch (mode) {
+    case "walking":
+      return "도보";
+    case "transit":
+      return "대중교통";
+    case "vehicle":
+      return "차량";
+    default:
+      return "기타";
+  }
+}
 
-  const {
-    id,
-    fromIndex,
-    toIndex,
-    distanceKm,
-    durationSeconds,
-    averageSpeedKmh,
-    inferredMode,
-    candidateRoutes,
-  } = segment;
+export function RouteCard({ route }: Props) {
+  const [selectedIds, setSelectedIds] = useAtom(selectedRouteIdsAtom);
+  const isSelected = selectedIds.has(route.id);
 
-  const minutes = Math.round(durationSeconds / 60);
-
-  const sortedCandidates = [...candidateRoutes].sort(
-    (a, b) => a.totalDurationSeconds - b.totalDurationSeconds,
-  );
-  const topRoute = sortedCandidates[0];
-
-  const handleToggleTopRoute = () => {
-    if (!topRoute) return;
-
-    setSelectedRouteIds((prev) => {
+  const toggleSelect = () => {
+    setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(topRoute.id)) {
-        next.delete(topRoute.id);
+      if (next.has(route.id)) {
+        next.delete(route.id);
         return next;
       }
-      if (next.size >= 3) return next; // 최대 3개
-      next.add(topRoute.id);
+      if (next.size >= 3) {
+        // 최대 3개까지
+        return next;
+      }
+      next.add(route.id);
       return next;
     });
   };
 
-  const isTopSelected = topRoute ? selectedRouteIds.has(topRoute.id) : false;
+  const primaryModeLabel = getPrimaryModeLabel(route.primaryMode);
+  const distanceKm = Math.round(route.totalDistanceKm * 10) / 10;
+  const durationMinutes = Math.round(route.totalDurationSeconds / 60);
+
+  // (선택) CCTV 개수 합산: legs에 cctvCount 같은 필드가 있다면 여기서 합산
+  // const cctvCount = route.legs.reduce((sum, leg) => sum + (leg.cctvCount ?? 0), 0);
 
   return (
-    <Card className="p-3 text-sm space-y-2">
+    <button
+      type="button"
+      className={`rounded border p-3 text-sm cursor-pointer ${
+        isSelected ? "border-blue-500 bg-blue-50" : "border-gray-200"
+      }`}
+      onClick={toggleSelect}
+    >
       <div className="flex items-center justify-between">
-        <span className="font-medium">
-          구간 #{fromIndex + 1} → #{toIndex + 1}
-        </span>
-        <span className="text-xs uppercase text-gray-500">{inferredMode}</span>
+        <span>{primaryModeLabel}</span>
+        <span>{distanceKm} km</span>
       </div>
-
       <div className="text-xs text-gray-600">
-        거리 {distanceKm.toFixed(2)} km · 시간 {minutes}분 · 평균 속도{" "}
-        {averageSpeedKmh.toFixed(1)} km/h
+        {durationMinutes}분{/* , 세그먼트 내 CCTV {cctvCount}대 */}
       </div>
-
-      <div className="flex items-center justify-between text-xs text-gray-700">
-        {candidateRoutes.length === 0 ? (
-          <span>TMAP 경로 후보 없음</span>
-        ) : (
-          <span>
-            TMAP 후보 {candidateRoutes.length}개 · 최단{" "}
-            {Math.round((topRoute?.totalDurationSeconds ?? 0) / 60)}분 /{" "}
-            {(topRoute?.totalDistanceKm ?? 0).toFixed(1)} km ·{" "}
-            <span className="uppercase">{topRoute?.primaryMode}</span>
-          </span>
-        )}
-
-        {topRoute && (
-          <button
-            type="button"
-            onClick={handleToggleTopRoute}
-            className={`px-2 py-1 rounded border text-[11px] ${
-              isTopSelected
-                ? "bg-blue-600 text-white border-blue-600"
-                : "bg-white text-gray-700 border-gray-300"
-            }`}
-          >
-            {isTopSelected ? "대표 경로 해제" : "대표 경로 선택"}
-          </button>
-        )}
-      </div>
-    </Card>
+    </button>
   );
 }
