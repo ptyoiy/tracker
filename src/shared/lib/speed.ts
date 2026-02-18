@@ -1,5 +1,4 @@
-// src/shared/lib/speed.ts
-import { SPEED_THRESHOLD } from "@/shared/config/constant";
+import { SPEED_THRESHOLD } from "../config/constant";
 
 export type SpeedCategory = "walking" | "transit" | "vehicle";
 

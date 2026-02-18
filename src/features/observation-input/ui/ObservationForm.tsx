@@ -1,13 +1,14 @@
 // src/features/observation-input/ui/ObservationForm.tsx
 "use client";
 
+import { useAnalyze } from "@/features/route-analysis/lib/useAnalyze";
+import { Button } from "@/shared/ui/button";
+import { Card } from "@/shared/ui/card";
+import { Input } from "@/shared/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useEffect } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
-import { Button } from "@/shared/ui/button";
-import { Card } from "@/shared/ui/card";
-import { Input } from "@/shared/ui/input";
 import {
   futureMinutesAtom,
   observationFormAtom,
@@ -20,6 +21,7 @@ export function ObservationForm() {
   const [observations, setObservations] = useAtom(observationsAtom);
   const currentFutureMinutes = useAtomValue(futureMinutesAtom);
   const setObservationForm = useSetAtom(observationFormAtom);
+  const { analyze } = useAnalyze();
 
   const form = useForm<ObservationFormValues>({
     resolver: zodResolver(formSchema),
@@ -46,7 +48,7 @@ export function ObservationForm() {
 
   const onSubmit = (values: ObservationFormValues) => {
     setObservationForm(values);
-    // Phase 3에서 분석 API 호출
+    void analyze(); // 분석 호출
   };
 
   // 관측 추가 버튼은 atom에도 반영
