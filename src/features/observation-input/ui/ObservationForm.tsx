@@ -1,5 +1,4 @@
 // src/features/observation-input/ui/ObservationForm.tsx
-// src/features/observation-input/ui/ObservationForm.tsx
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";

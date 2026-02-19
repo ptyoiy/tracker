@@ -1,5 +1,4 @@
 // src/features/map-view/ui/MapView.tsx
-// src/features/map-view/ui/MapView.tsx
 "use client";
 
 import { useAtomValue, useSetAtom } from "jotai";
