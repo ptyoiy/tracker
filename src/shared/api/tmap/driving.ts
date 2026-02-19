@@ -1,45 +1,66 @@
+// src/shared/api/tmap/driving.ts
+
 import ky from "ky";
+import { env } from "@/shared/config/env";
+import type { TmapBasicRouteResponse, TmapLatLng } from "./types";
 
-export interface TmapDrivingResponse {
-  type: "FeatureCollection";
-  features: Array<{
-    type: "Feature";
-    geometry: {
-      type: "LineString";
-      coordinates: number[][];
-    };
-    properties: {
-      totalDistance: number;
-      totalTime: number;
-    };
-  }>;
-}
+export type TmapDrivingRoute = {
+  distanceMeters: number;
+  durationSeconds: number;
+  polyline: TmapLatLng[];
+};
 
-export async function getTmapDrivingRoute(
-  from: { lat: number; lng: number },
-  to: { lat: number; lng: number },
-): Promise<TmapDrivingResponse> {
-  if (!process.env.TMAP_APP_KEY) {
-    throw new Error("TMAP_APP_KEY is not set");
+const TMAP_DRIVING_URL = "https://apis.openapi.sk.com/tmap/routes";
+
+export async function getDrivingRoute(
+  from: TmapLatLng,
+  to: TmapLatLng,
+): Promise<TmapDrivingRoute | null> {
+  const body = {
+    startX: from.lng,
+    startY: from.lat,
+    endX: to.lng,
+    endY: to.lat,
+    reqCoordType: "WGS84GEO",
+    resCoordType: "WGS84GEO",
+    startName: "start",
+    endName: "end",
+  };
+
+  try {
+    const res = await ky
+      .post(TMAP_DRIVING_URL, {
+        headers: {
+          "Content-Type": "application/json",
+          appKey: env.TMAP_APP_KEY,
+        },
+        json: body,
+        timeout: 10000,
+      })
+      .json<TmapBasicRouteResponse>();
+
+    const totalDistance = res.properties?.totalDistance ?? 0;
+    const totalTime = res.properties?.totalTime ?? 0;
+
+    const polyline: TmapLatLng[] = [];
+
+    for (const feature of res.features) {
+      if (feature.geometry.type === "LineString") {
+        const coords = feature.geometry.coordinates as number[][];
+        coords.forEach(([lng, lat]) => {
+          polyline.push({ lat, lng });
+        });
+      }
+    }
+
+    if (polyline.length === 0) return null;
+
+    return {
+      distanceMeters: totalDistance,
+      durationSeconds: totalTime,
+      polyline,
+    };
+  } catch {
+    return null;
   }
-
-  const response = await ky
-    .post("https://apis.openapi.sk.com/tmap/routes", {
-      headers: {
-        appKey: process.env.TMAP_APP_KEY,
-        "Content-Type": "application/json",
-      },
-      json: {
-        startX: from.lng,
-        startY: from.lat,
-        endX: to.lng,
-        endY: to.lat,
-        reqCoordType: "WGS84GEO",
-        resCoordType: "WGS84GEO",
-      },
-      timeout: 10000,
-    })
-    .json<TmapDrivingResponse>();
-
-  return response;
 }

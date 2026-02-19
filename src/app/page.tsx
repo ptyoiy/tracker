@@ -3,6 +3,7 @@
 import { useAtom } from "jotai";
 import { MapView } from "@/features/map-view/ui/MapView";
 import { ObservationForm } from "@/features/observation-input/ui/ObservationForm";
+import { RouteListPanel } from "@/features/route-analysis/ui/RouteAnalysisPanel";
 import { KakaoLoader } from "@/shared/lib/KakaoLoader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import { activeTabAtom } from "@/store/atoms";
@@ -34,6 +35,7 @@ export default function Home() {
         </TabsContent>
 
         <TabsContent value="map" className="flex-1 relative mt-0">
+          <RouteListPanel />
           <MapView />
         </TabsContent>
       </Tabs>

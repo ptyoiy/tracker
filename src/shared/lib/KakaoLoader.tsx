@@ -5,7 +5,7 @@ import { useEffect } from "react";
 export function KakaoLoader() {
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if ((window as any).kakao?.maps) return;
+    if (window.kakao?.maps) return;
 
     const script = document.createElement("script");
     script.id = "kakao-maps-sdk";
@@ -16,7 +16,7 @@ export function KakaoLoader() {
     document.body.appendChild(script);
 
     script.onload = () => {
-      (window as any).kakao.maps.load(() => {
+      window.kakao.maps.load(() => {
         console.log("Kakao Maps SDK loaded");
       });
     };

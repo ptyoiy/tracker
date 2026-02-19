@@ -1,95 +1,51 @@
+// src/shared/api/tmap/__tests__/pedestrian.test.ts
 import ky from "ky";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getTmapDrivingRoute, type TmapDrivingResponse } from "./driving";
+import { describe, expect, it, Mock, vi } from "vitest";
+import { getDrivingRoute } from "./driving";
 
-// ky 전체를 mock
-vi.mock("ky", () => {
-  return {
-    default: {
-      post: vi.fn(), // 이 post에 우리가 원하는 리턴값을 심는다
-    },
-  };
-});
+vi.mock("ky");
 
-describe("getTmapDrivingRoute", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    process.env.TMAP_APP_KEY = "TEST_APP_KEY";
-  });
-
-  it("올바른 URL, 헤더, JSON 바디로 ky.post를 호출하고 응답을 그대로 반환한다", async () => {
-    const from = { lat: 37.5547, lng: 126.9707 };
-    const to = { lat: 37.5637, lng: 126.977 };
-
-    const fakeResponse: TmapDrivingResponse = {
-      type: "FeatureCollection",
-      features: [
-        {
-          type: "Feature",
-          geometry: {
-            type: "LineString",
-            coordinates: [
-              [126.9707, 37.5547],
-              [126.977, 37.5637],
-            ],
+describe("getDrivingRoute", () => {
+  it("TMap 응답을 파싱해 거리/시간/폴리라인을 반환한다", async () => {
+    (ky.post as unknown as Mock).mockReturnValueOnce({
+      json: async () => ({
+        properties: { totalDistance: 10_000, totalTime: 600 },
+        features: [
+          {
+            type: "Feature",
+            geometry: {
+              type: "LineString",
+              coordinates: [
+                [127, 37.5],
+                [127.1, 37.6],
+              ],
+            },
+            properties: {},
           },
-          properties: {
-            totalDistance: 1500,
-            totalTime: 600,
-          },
-        },
-      ],
-    };
+        ],
+      }),
+    });
 
-    // json() 메서드를 가진 객체를 즉시 반환하도록 수정
-    const mockJsonFn = vi.fn().mockResolvedValue(fakeResponse);
-
-    vi.mocked(ky.post).mockReturnValue({
-      json: mockJsonFn,
-    } as any);
-
-    const result = await getTmapDrivingRoute(from, to);
-
-    // 호출 검증
-    expect(ky.post).toHaveBeenCalledTimes(1);
-    expect(ky.post).toHaveBeenCalledWith(
-      "https://apis.openapi.sk.com/tmap/routes",
-      {
-        headers: {
-          appKey: "TEST_APP_KEY",
-          "Content-Type": "application/json",
-        },
-        json: {
-          startX: from.lng,
-          startY: from.lat,
-          endX: to.lng,
-          endY: to.lat,
-          reqCoordType: "WGS84GEO",
-          resCoordType: "WGS84GEO",
-        },
-        timeout: 10000,
-      },
+    const route = await getDrivingRoute(
+      { lat: 37.5, lng: 127 },
+      { lat: 37.6, lng: 127.1 },
     );
 
-    // json() 메서드가 호출되었는지 확인
-    expect(mockJsonFn).toHaveBeenCalledTimes(1);
+    expect(route).not.toBeNull();
+    if (!route) return;
 
-    // 반환값 검증
-    expect(result).toEqual(fakeResponse);
+    expect(route.distanceMeters).toBe(10_000);
+    expect(route.durationSeconds).toBe(600);
+    expect(route.polyline).toHaveLength(2);
+    expect(route.polyline[0]).toEqual({ lat: 37.5, lng: 127 });
   });
 
-  it("TMAP_APP_KEY가 없으면 에러가 발생한다", async () => {
-    delete process.env.TMAP_APP_KEY;
+  it("예외 발생 시 null을 반환한다", async () => {
+    (ky.post as unknown as Mock).mockImplementationOnce(() => {
+      throw new Error("network");
+    });
 
-    const from = { lat: 37.5547, lng: 126.9707 };
-    const to = { lat: 37.5637, lng: 126.977 };
-
-    // 이 경우에도 mock 설정 필요 (실제 호출이 일어나므로)
-    const mockJsonFn = vi.fn();
-    vi.mocked(ky.post).mockReturnValue({
-      json: mockJsonFn,
-    } as any);
-
-    await expect(getTmapDrivingRoute(from, to)).rejects.toThrow();
+    const route = await getDrivingRoute({ lat: 0, lng: 0 }, { lat: 1, lng: 1 });
+    expect(route).toBeNull();
   });
 });

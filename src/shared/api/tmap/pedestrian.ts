@@ -1,59 +1,65 @@
-// src/lib/tmap/pedestrian.ts
 import ky from "ky";
+import { env } from "@/shared/config/env";
+import type { TmapBasicRouteResponse, TmapLatLng } from "./types";
 
-export interface TmapPedestrianRequest {
-  startX: number; // 경도
-  startY: number; // 위도
-  endX: number;
-  endY: number;
-  startName?: string;
-  endName?: string;
-}
+export type TmapPedestrianRoute = {
+  distanceMeters: number;
+  durationSeconds: number;
+  polyline: TmapLatLng[];
+};
 
-export interface TmapPedestrianResponse {
-  type: "FeatureCollection";
-  features: Array<{
-    type: "Feature";
-    geometry: {
-      type: "LineString";
-      coordinates: number[][]; // [lng, lat]
-    };
-    properties: {
-      totalDistance: number; // 미터
-      totalTime: number; // 초
-    };
-  }>;
-}
+const TMAP_PEDESTRIAN_URL =
+  "https://apis.openapi.sk.com/tmap/routes/pedestrian";
 
-export async function getTmapPedestrianRoute(
-  from: { lat: number; lng: number },
-  to: { lat: number; lng: number },
-): Promise<TmapPedestrianResponse> {
-  if (!process.env.TMAP_APP_KEY) {
-    throw new Error("TMAP_APP_KEY is not set");
-  }
-  const response = await ky
-    .post<TmapPedestrianRequest>(
-      "https://apis.openapi.sk.com/tmap/routes/pedestrian",
-      {
+export async function getPedestrianRoute(
+  from: TmapLatLng,
+  to: TmapLatLng,
+): Promise<TmapPedestrianRoute | null> {
+  const body = {
+    startX: from.lng,
+    startY: from.lat,
+    endX: to.lng,
+    endY: to.lat,
+    reqCoordType: "WGS84GEO",
+    resCoordType: "WGS84GEO",
+    startName: "start",
+    endName: "end",
+  };
+
+  try {
+    const res = await ky
+      .post(TMAP_PEDESTRIAN_URL, {
         headers: {
-          appKey: process.env.TMAP_APP_KEY,
           "Content-Type": "application/json",
+          appKey: env.TMAP_APP_KEY,
         },
-        json: {
-          startX: from.lng,
-          startY: from.lat,
-          endX: to.lng,
-          endY: to.lat,
-          startName: "출발",
-          endName: "도착",
-          reqCoordType: "WGS84GEO",
-          resCoordType: "WGS84GEO",
-        },
+        json: body,
         timeout: 10000,
-      },
-    )
-    .json<TmapPedestrianResponse>();
+      })
+      .json<TmapBasicRouteResponse>();
 
-  return response;
+    const totalDistance = res.properties?.totalDistance ?? 0;
+    const totalTime = res.properties?.totalTime ?? 0;
+
+    const polyline: TmapLatLng[] = [];
+
+    for (const feature of res.features) {
+      if (feature.geometry.type === "LineString") {
+        const coords = feature.geometry.coordinates as number[][];
+        coords.forEach(([lng, lat]) => {
+          polyline.push({ lat, lng });
+        });
+      }
+    }
+
+    if (polyline.length === 0) return null;
+
+    return {
+      distanceMeters: totalDistance,
+      durationSeconds: totalTime,
+      polyline,
+    };
+  } catch {
+    return null;
+  }
 }

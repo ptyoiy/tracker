@@ -4,6 +4,7 @@ export function getDurationSeconds(
   from: IsoDateTimeString,
   to: IsoDateTimeString,
 ): number {
-  // TODO: date-fns.differenceInSeconds 등 사용
-  return 0;
+  const start = new Date(from).getTime();
+  const end = new Date(to).getTime();
+  return Math.max(0, Math.round((end - start) / 1000));
 }

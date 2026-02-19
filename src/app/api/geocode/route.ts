@@ -34,6 +34,7 @@ export async function GET(req: Request) {
       doc?.road_address?.address_name ?? doc?.address?.address_name ?? null;
 
     return NextResponse.json({ address });
+    // biome-ignore lint/correctness/noUnusedVariables: <useless>
   } catch (e) {
     return NextResponse.json({ address: null }, { status: 200 });
   }
