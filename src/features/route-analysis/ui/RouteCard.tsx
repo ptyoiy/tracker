@@ -1,9 +1,9 @@
 // src/features/route-analysis/ui/RouteCard.tsx
 "use client";
 
-import { useAtom } from "jotai";
+import { useAtom, useAtomValue } from "jotai";
 import type { RouteInfo } from "@/types/analyze";
-import { selectedRouteIdsAtom } from "../model/atoms";
+import { routeCctvCountAtom, selectedRouteIdsAtom } from "../model/atoms";
 
 type Props = {
   route: RouteInfo;
@@ -24,7 +24,10 @@ function getPrimaryModeLabel(mode: RouteInfo["primaryMode"]) {
 
 export function RouteCard({ route }: Props) {
   const [selectedIds, setSelectedIds] = useAtom(selectedRouteIdsAtom);
+  const cctvCounts = useAtomValue(routeCctvCountAtom);
+
   const isSelected = selectedIds.has(route.id);
+  const cctvCount = cctvCounts[route.id] ?? 0;
 
   const toggleSelect = () => {
     setSelectedIds((prev) => {
@@ -34,7 +37,6 @@ export function RouteCard({ route }: Props) {
         return next;
       }
       if (next.size >= 3) {
-        // 최대 3개까지
         return next;
       }
       next.add(route.id);
@@ -45,9 +47,6 @@ export function RouteCard({ route }: Props) {
   const primaryModeLabel = getPrimaryModeLabel(route.primaryMode);
   const distanceKm = Math.round(route.totalDistanceKm * 10) / 10;
   const durationMinutes = Math.round(route.totalDurationSeconds / 60);
-
-  // (선택) CCTV 개수 합산: legs에 cctvCount 같은 필드가 있다면 여기서 합산
-  // const cctvCount = route.legs.reduce((sum, leg) => sum + (leg.cctvCount ?? 0), 0);
 
   return (
     <button
@@ -62,7 +61,7 @@ export function RouteCard({ route }: Props) {
         <span>{distanceKm} km</span>
       </div>
       <div className="text-xs text-gray-600">
-        {durationMinutes}분{/* , 세그먼트 내 CCTV {cctvCount}대 */}
+        {durationMinutes}분 · CCTV {cctvCount}대
       </div>
     </button>
   );

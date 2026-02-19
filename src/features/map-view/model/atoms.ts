@@ -9,4 +9,11 @@ export type IsochroneState = {
   fallbackUsed: boolean;
 };
 
+export type ViewportBounds = {
+  sw: { lat: number; lng: number };
+  ne: { lat: number; lng: number };
+};
+
 export const isochroneAtom = atom<IsochroneState | null>(null);
+
+export const viewportAtom = atom<ViewportBounds | null>(null);

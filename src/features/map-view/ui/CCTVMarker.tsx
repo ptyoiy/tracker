@@ -3,32 +3,41 @@
 
 import { useAtomValue } from "jotai";
 import { CustomOverlayMap, MapMarker } from "react-kakao-maps-sdk";
-import { filteredCctvAtom } from "@/features/cctv-mapping/model/atoms";
+import {
+  filteredCctvAtom,
+  hoveredCctvIdAtom,
+} from "@/features/cctv-mapping/model/atoms";
 
 export function CCTVMarkers() {
   const cctvs = useAtomValue(filteredCctvAtom);
-
+  const hoveredId = useAtomValue(hoveredCctvIdAtom);
+  console.log({ cctvs });
   if (!cctvs.length) return null;
 
   return (
     <>
-      {cctvs.map((c) => (
-        <MapMarker
-          key={c.id}
-          position={{ lat: c.lat, lng: c.lng }}
-          image={{
-            src: "/icons/cctv.png",
-            size: { width: 18, height: 18 },
-          }}
-        >
-          <CustomOverlayMap position={{ lat: c.lat, lng: c.lng }}>
-            <div className="rounded bg-black/70 px-1 py-0.5 text-[10px] text-white">
-              {c.roadName ?? "CCTV"}{" "}
-              {c.direction !== "UNKNOWN" ? `(${c.direction})` : ""}
-            </div>
-          </CustomOverlayMap>
-        </MapMarker>
-      ))}
+      {cctvs.map((c) => {
+        const isActive = c.id === hoveredId;
+
+        return (
+          <MapMarker
+            key={c.id}
+            position={{ lat: c.lat, lng: c.lng }}
+            image={{
+              src: isActive ? "/icons/cctv-active.png" : "/icons/cctv.png",
+              size: { width: isActive ? 22 : 18, height: isActive ? 22 : 18 },
+            }}
+          >
+            {isActive && (
+              <CustomOverlayMap position={{ lat: c.lat, lng: c.lng }}>
+                <div className="rounded bg-black/70 px-1 py-0.5 text-[10px] text-white">
+                  {c.roadName ?? "CCTV"} ({c.direction})
+                </div>
+              </CustomOverlayMap>
+            )}
+          </MapMarker>
+        );
+      })}
     </>
   );
 }

@@ -23,3 +23,6 @@ export const selectedRouteInfosAtom = atom<RouteInfo[]>((get) => {
   const selected = get(selectedRouteIdsAtom);
   return all.filter((r) => selected.has(r.id));
 });
+
+// routeId별 CCTV 개수 매핑
+export const routeCctvCountAtom = atom<Record<string, number>>({});

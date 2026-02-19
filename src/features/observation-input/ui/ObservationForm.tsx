@@ -111,61 +111,27 @@ export function ObservationForm() {
 
   return (
     <Card className="p-4 space-y-4">
-      <h2 className="text-lg font-semibold">관측 지점 입력</h2>
-
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <Card className="p-4 space-y-4">
-          <h2 className="text-lg font-semibold">관측 지점 입력</h2>
-
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-3">
-              {fields.map((field, index) => (
-                <ObservationFormFields
-                  key={field.id}
-                  index={index}
-                  form={form}
-                  onRemove={() => handleRemove(index)}
-                />
-              ))}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={fields.length >= 15}
-                onClick={handleAppend}
-              >
-                관측 지점 추가
-              </Button>
-            </div>
-
-            <div className="space-y-1">
-              <label htmlFor="futureMinutes" className="text-sm font-medium">
-                추정 대상 시간(+분)
-              </label>
-              <Input
-                id="futureMinutes"
-                type="number"
-                min={1}
-                max={60}
-                {...form.register("futureMinutes", { valueAsNumber: true })}
-              />
-              {form.formState.errors.futureMinutes && (
-                <p className="text-xs text-red-500">
-                  {form.formState.errors.futureMinutes.message}
-                </p>
-              )}
-            </div>
-
-            <Button type="submit" className="w-full" disabled={!canSubmit}>
-              분석 시작
-            </Button>
-            {!canSubmit && (
-              <p className="text-xs text-gray-500">
-                분석을 시작하려면 관측 지점을 최소 2개 등록해야 합니다.
-              </p>
-            )}
-          </form>
-        </Card>
+        <h2 className="text-lg font-semibold">관측 지점 입력</h2>
+        <div className="space-y-3">
+          {fields.map((field, index) => (
+            <ObservationFormFields
+              key={field.id}
+              index={index}
+              form={form}
+              onRemove={() => handleRemove(index)}
+            />
+          ))}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={fields.length >= 15}
+            onClick={handleAppend}
+          >
+            관측 지점 추가
+          </Button>
+        </div>
 
         <div className="space-y-1">
           <label htmlFor="futureMinutes" className="text-sm font-medium">

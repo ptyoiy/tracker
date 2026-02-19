@@ -7,9 +7,12 @@ import {
   Map as KakaoMap,
   MapMarker,
 } from "react-kakao-maps-sdk";
+import { useLoadCctvOnce } from "@/features/cctv-mapping/lib/cctv-api";
+import { useComputeRouteCctvCount } from "@/features/cctv-mapping/lib/route-cctv-count";
 import { observationsAtom } from "@/features/observation-input/model/atoms";
 import { coordToAddress } from "@/shared/api/kakao/geocoder";
 import { DEFAULT_CENTER } from "@/shared/config/constant";
+import { viewportAtom } from "../model/atoms";
 import { CCTVMarkers } from "./CCTVMarker";
 import { IsochronePolygon } from "./IsoChronePolygon";
 import { IsochroneControls } from "./IsochroneControls";
@@ -18,6 +21,10 @@ import { RoutePolyline } from "./RoutePolyLine";
 export function MapView() {
   const observations = useAtomValue(observationsAtom);
   const setObservations = useSetAtom(observationsAtom);
+  const setViewport = useSetAtom(viewportAtom);
+
+  useComputeRouteCctvCount();
+  useLoadCctvOnce();
 
   const last = observations[observations.length - 1];
 
@@ -43,6 +50,16 @@ export function MapView() {
     ]);
   };
 
+  const handleIdle = (map: kakao.maps.Map) => {
+    const bounds = map.getBounds();
+    const sw = bounds.getSouthWest();
+    const ne = bounds.getNorthEast();
+    setViewport({
+      sw: { lat: sw.getLat(), lng: sw.getLng() },
+      ne: { lat: ne.getLat(), lng: ne.getLng() },
+    });
+  };
+
   return (
     <>
       <IsochroneControls />
@@ -51,6 +68,7 @@ export function MapView() {
         style={{ width: "100%", height: "100%" }}
         level={7}
         onClick={handleMapClick}
+        onIdle={handleIdle}
       >
         {observations.map((obs, idx) => (
           <div key={`${obs.lat}-${obs.lng}-${obs.timestamp}`}>
@@ -67,10 +85,8 @@ export function MapView() {
             </CustomOverlayMap>
           </div>
         ))}
-        {/* 선택된 TMAP 경로 라인 */}
-        <RoutePolyline />
 
-        {/* Isochrone/CCTV */}
+        <RoutePolyline />
         <IsochronePolygon />
         <CCTVMarkers />
       </KakaoMap>
