@@ -1,14 +1,14 @@
 // src/features/observation-input/ui/ObservationForm.tsx
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { useEffect } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
 import { useAnalyze } from "@/features/route-analysis/lib/useAnalyze";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { Input } from "@/shared/ui/input";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useAtom, useSetAtom } from "jotai";
+import { useEffect, useRef } from "react";
+import { useFieldArray, useForm } from "react-hook-form";
 import {
   futureMinutesAtom,
   observationFormAtom,
@@ -32,17 +32,17 @@ function toLocalDatetimeInput(iso?: string) {
 
 export function ObservationForm() {
   const [observationsAtomValue, setObservations] = useAtom(observationsAtom);
-  const currentFutureMinutes = useAtomValue(futureMinutesAtom);
+  const [currentFutureMinutes, setFutureMinutes] = useAtom(futureMinutesAtom);
   const setObservationForm = useSetAtom(observationFormAtom);
   const { analyze } = useAnalyze();
 
-  // RHF는 datetime-local 문자열을 사용
+  const isInternalUpdate = useRef(false);
+
   const form = useForm<ObservationFormValuesRaw>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       observations: observationsAtomValue.map((o) => ({
         ...o,
-        // atom에는 ISO가 들어있다고 가정, 폼에는 로컬 문자열로 변환
         timestamp: toLocalDatetimeInput(o.timestamp),
       })),
       futureMinutes: currentFutureMinutes,
@@ -55,21 +55,87 @@ export function ObservationForm() {
     name: "observations",
   });
 
-  // atom -> RHF: 지도 클릭 등으로 observationsAtom이 바뀌면 폼에 반영
+  // 1) Atom -> Form: 외부(지도 등)에서 데이터가 변경된 경우에만 폼 업데이트
   useEffect(() => {
-    replace(
-      observationsAtomValue.map((o) => ({
+    if (isInternalUpdate.current) return;
+
+    // 현재 폼의 값과 Atom의 값을 비교하여 실제 차이가 있을 때만 replace
+    const currentFormValues = form.getValues("observations");
+    const isDifferent =
+      observationsAtomValue.length !== currentFormValues.length ||
+      observationsAtomValue.some((obs, i) => {
+        const formObs = currentFormValues[i];
+        if (!formObs) return true;
+        return (
+          obs.lat !== formObs.lat ||
+          obs.lng !== formObs.lng ||
+          toLocalDatetimeInput(obs.timestamp) !== formObs.timestamp
+        );
+      });
+
+    if (isDifferent) {
+      isInternalUpdate.current = true;
+      replace(
+        observationsAtomValue.map((o) => ({
+          ...o,
+          timestamp: toLocalDatetimeInput(o.timestamp),
+        })),
+      );
+      // RHF의 replace가 완료된 후 플래그 해제 (다음 틱)
+      setTimeout(() => {
+        isInternalUpdate.current = false;
+      }, 0);
+    }
+  }, [observationsAtomValue, replace, form]);
+
+  // 2) Form -> Atom: 폼에서 직접 수정이 발생한 경우에만 Atom 업데이트
+  useEffect(() => {
+    const subscription = form.watch((values, { name }) => {
+      // 폼 내부 업데이트(replace 등) 중이거나 필요한 값이 없으면 무시
+      if (isInternalUpdate.current || !values.observations) return;
+
+      const normalizedObservations = values.observations.map((o) => ({
         ...o,
-        timestamp: toLocalDatetimeInput(o.timestamp),
-      })),
-    );
-  }, [observationsAtomValue, replace]);
+        lat: o?.lat ?? 0,
+        lng: o?.lng ?? 0,
+        timestamp: o?.timestamp
+          ? new Date(o.timestamp).toISOString()
+          : new Date().toISOString(),
+        label: o?.label ?? "",
+        address: o?.address ?? "",
+      }));
+
+      // 실제 데이터가 다른 경우에만 Atom 업데이트
+      const isActuallyDifferent =
+        JSON.stringify(normalizedObservations) !==
+        JSON.stringify(observationsAtomValue);
+
+      if (isActuallyDifferent) {
+        setObservations(normalizedObservations);
+      }
+
+      if (
+        typeof values.futureMinutes === "number" &&
+        values.futureMinutes !== currentFutureMinutes
+      ) {
+        setFutureMinutes(values.futureMinutes);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [
+    form,
+    observationsAtomValue,
+    currentFutureMinutes,
+    setObservations,
+    setFutureMinutes,
+  ]);
 
   const watchObservations = form.watch("observations");
   const canSubmit = watchObservations.length >= 2;
 
   const onSubmit = (values: ObservationFormValuesRaw) => {
-    // 1) datetime-local -> ISO 변환
+    // 최종 분석 시에는 정렬하여 반영
     const normalizedObservations: ObservationFormValues["observations"] =
       values.observations.map((o) => ({
         ...o,
@@ -81,11 +147,7 @@ export function ObservationForm() {
       futureMinutes: values.futureMinutes,
     };
 
-    // 2) atom에 최종값 반영 (단일 방향: RHF -> atom)
     setObservationForm(normalized);
-    setObservations(normalizedObservations);
-
-    // 3) 분석 호출
     void analyze();
   };
 
