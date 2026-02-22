@@ -39,8 +39,13 @@ export async function getDrivingRoute(
       })
       .json<TmapBasicRouteResponse>();
 
-    const totalDistance = res.properties?.totalDistance ?? 0;
-    const totalTime = res.properties?.totalTime ?? 0;
+    const firstFeatureProperties = res.features[0]?.properties;
+    const totalDistance =
+      res.properties?.totalDistance ??
+      firstFeatureProperties?.totalDistance ??
+      0;
+    const totalTime =
+      res.properties?.totalTime ?? firstFeatureProperties?.totalTime ?? 0;
 
     const polyline: TmapLatLng[] = [];
 

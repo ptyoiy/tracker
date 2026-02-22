@@ -12,7 +12,7 @@ const profiles: { value: IsochroneProfile; label: string }[] = [
 export function IsochroneControls() {
   const { isochrone, computeIsochrone } = useIsochrone();
 
-  const currentProfile = isochrone?.profile ?? "walking";
+  const currentProfile = isochrone?.profile;
 
   const handleClickProfile = (profile: IsochroneProfile) => {
     void computeIsochrone(profile);

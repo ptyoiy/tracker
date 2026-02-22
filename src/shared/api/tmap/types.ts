@@ -19,6 +19,8 @@ export type TmapFeatureProperties = {
   // 공통적으로 쓰는 필드만 정의
   distance?: number;
   time?: number;
+  totalDistance?: number;
+  totalTime?: number;
   // transit용
   index?: number;
   lineName?: string;

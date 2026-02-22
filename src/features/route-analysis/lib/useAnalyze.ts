@@ -50,7 +50,7 @@ export function useAnalyze() {
         const routes = seg.candidateRoutes ?? [];
         if (!routes.length) continue;
         const best = [...routes].sort(
-          (a, b) => a.estimatedDurationSeconds - b.estimatedDurationSeconds,
+          (a, b) => a.totalDurationSeconds - b.totalDurationSeconds,
         )[0];
         if (best && initialSelected.size < 3) {
           initialSelected.add(best.id);

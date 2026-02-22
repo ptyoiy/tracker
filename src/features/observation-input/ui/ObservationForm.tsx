@@ -2,6 +2,7 @@
 "use client";
 
 import { useAnalyze } from "@/features/route-analysis/lib/useAnalyze";
+import { useIsochrone } from "@/features/map-view/lib/useIsochrone";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { Input } from "@/shared/ui/input";
@@ -35,6 +36,7 @@ export function ObservationForm() {
   const [currentFutureMinutes, setFutureMinutes] = useAtom(futureMinutesAtom);
   const setObservationForm = useSetAtom(observationFormAtom);
   const { analyze } = useAnalyze();
+  const { computeIsochrone } = useIsochrone();
 
   const isInternalUpdate = useRef(false);
 
@@ -149,6 +151,7 @@ export function ObservationForm() {
 
     setObservationForm(normalized);
     void analyze();
+    void computeIsochrone("walking");
   };
 
   // 관측 추가 버튼 (폼만 건드림, atom은 submit 시 동기화)

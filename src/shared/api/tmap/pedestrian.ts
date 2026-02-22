@@ -38,8 +38,14 @@ export async function getPedestrianRoute(
       })
       .json<TmapBasicRouteResponse>();
 
-    const totalDistance = res.properties?.totalDistance ?? 0;
-    const totalTime = res.properties?.totalTime ?? 0;
+    // Tmap GeoJSON에서는 첫 번째 Feature의 properties에 요약 정보가 들어있는 경우가 많음
+    const firstFeatureProperties = res.features[0]?.properties;
+    const totalDistance =
+      res.properties?.totalDistance ??
+      firstFeatureProperties?.totalDistance ??
+      0;
+    const totalTime =
+      res.properties?.totalTime ?? firstFeatureProperties?.totalTime ?? 0;
 
     const polyline: TmapLatLng[] = [];
 
