@@ -14,6 +14,13 @@ export type ViewportBounds = {
   ne: { lat: number; lng: number };
 };
 
+export type ActivePopup =
+  | { type: "cctv"; id: string }
+  | { type: "observation"; index: number }
+  | null;
+
 export const isochroneAtom = atom<IsochroneState | null>(null);
 
 export const viewportAtom = atom<ViewportBounds | null>(null);
+
+export const activePopupAtom = atom<ActivePopup>(null);
