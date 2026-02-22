@@ -1,47 +1,62 @@
 // app/api/cctv/route.ts (Next.js 15 App Router 기준)
 
 import { type NextRequest, NextResponse } from "next/server";
-import { env } from "@/shared/config/env";
-
-const CCTV_BASE_URL = "https://apis.data.go.kr/1741000/cctv_info/info";
+import { turso } from "@/shared/lib/turso";
 
 export async function GET(req: NextRequest) {
-  const apiKey = env.DATA_GO_KR_API_KEY;
-  if (!apiKey) {
+  const { searchParams } = new URL(req.url);
+
+  const orgCode = searchParams.get("opnCode");
+  const minLat = searchParams.get("minLat");
+  const maxLat = searchParams.get("maxLat");
+  const minLng = searchParams.get("minLng");
+  const maxLng = searchParams.get("maxLng");
+
+  try {
+    let sql = "SELECT * FROM cctv WHERE 1=1";
+    const args = [];
+
+    if (orgCode) {
+      sql += " AND org_code = ?";
+      args.push(orgCode);
+    }
+
+    if (minLat && maxLat && minLng && maxLng) {
+      sql += " AND lat >= ? AND lat <= ? AND lng >= ? AND lng <= ?";
+      args.push(Number(minLat), Number(maxLat), Number(minLng), Number(maxLng));
+    }
+
+    const result = await turso.execute({ sql, args });
+
+    // Format to match the structure expected by the frontend if needed,
+    // or just return the rows. The user mentioned they want to use the items array.
+    // For compatibility with the previous public API response structure:
+    return NextResponse.json({
+      response: {
+        header: { resultCode: "0", resultMsg: "NORMAL SERVICE." },
+        body: {
+          items: {
+            item: result.rows.map((row) => ({
+              MNG_NO: row.id,
+              INSTL_PRPS_SE_NM: row.purpose,
+              LCTN_LOTNO_ADDR: row.lot_address,
+              LCTN_ROAD_NM_ADDR: row.road_address,
+              MNG_INST_NM: row.manager_name,
+              OPN_ATMY_GRP_CD: row.org_code,
+              SHT_ANGLE_INFO: row.shot_angle,
+              WGS84_LAT: String(row.lat),
+              WGS84_LOT: String(row.lng),
+            })),
+          },
+          totalCount: result.rows.length,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Failed to fetch CCTV from Turso:", error);
     return NextResponse.json(
-      { error: "CCTV_API_KEY missing" },
+      { error: "Internal Server Error" },
       { status: 500 },
     );
   }
-
-  const { searchParams } = new URL(req.url);
-
-  // 클라이언트가 넘긴 파라미터들: bounds, page, rows, cond 코드 등
-  const page = searchParams.get("pageNo") ?? "1";
-  const numOfRows = searchParams.get("numOfRows") ?? "100";
-  const opnCode = searchParams.get("opnCode"); // cond[OPN_ATMY_GRP_CD::EQ]에 넣을 값
-
-  const upstreamParams = new URLSearchParams({
-    serviceKey: apiKey,
-    pageNo: page,
-    numOfRows,
-    returnType: "json",
-  });
-
-  if (opnCode) {
-    upstreamParams.set("cond[OPN_ATMY_GRP_CD::EQ]", opnCode);
-  }
-
-  const upstreamUrl = `${CCTV_BASE_URL}?${upstreamParams.toString()}`;
-
-  const res = await fetch(upstreamUrl);
-  if (!res.ok) {
-    return NextResponse.json(
-      { error: "Upstream CCTV API error" },
-      { status: 502 },
-    );
-  }
-
-  const data = await res.json();
-  return NextResponse.json(data);
 }

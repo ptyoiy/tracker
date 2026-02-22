@@ -9,9 +9,11 @@ import {
 } from "react-kakao-maps-sdk";
 import { useLoadCctvOnce } from "@/features/cctv-mapping/lib/cctv-api";
 import { useComputeRouteCctvCount } from "@/features/cctv-mapping/lib/route-cctv-count";
+import { cctvLoadingAtom } from "@/features/cctv-mapping/model/atoms";
 import { observationsAtom } from "@/features/observation-input/model/atoms";
 import { coordToAddress } from "@/shared/api/kakao/geocoder";
 import { DEFAULT_CENTER } from "@/shared/config/constant";
+import { Badge } from "@/shared/ui/badge";
 import { viewportAtom } from "../model/atoms";
 import { CCTVMarkers } from "./CCTVMarker";
 import { IsochronePolygon } from "./IsoChronePolygon";
@@ -20,11 +22,12 @@ import { RoutePolyline } from "./RoutePolyLine";
 
 export function MapView() {
   const observations = useAtomValue(observationsAtom);
+  const isCctvLoading = useAtomValue(cctvLoadingAtom);
   const setObservations = useSetAtom(observationsAtom);
   const setViewport = useSetAtom(viewportAtom);
 
-  useComputeRouteCctvCount();
   useLoadCctvOnce();
+  useComputeRouteCctvCount();
 
   const last = observations[observations.length - 1];
 
@@ -63,6 +66,18 @@ export function MapView() {
   return (
     <>
       <IsochroneControls />
+
+      {isCctvLoading && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000]">
+          <Badge
+            variant="secondary"
+            className="px-4 py-2 animate-pulse bg-white/90 shadow-md border-primary text-primary"
+          >
+            CCTV 데이터를 가져오는 중...
+          </Badge>
+        </div>
+      )}
+
       <KakaoMap
         center={last ? { lat: last.lat, lng: last.lng } : DEFAULT_CENTER}
         style={{ width: "100%", height: "100%" }}

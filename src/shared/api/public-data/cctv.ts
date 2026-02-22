@@ -1,14 +1,12 @@
 // src/shared/api/public-data/cctv.ts
 import ky from "ky";
-import { coordToAddress } from "@/shared/api/kakao/geocoder";
 import type { CCTV } from "@/types/cctv";
-import { findOpenAtmyCodeByAddress } from "./open-atmy-grp";
 
 // src/shared/api/public-data/cctv.ts
 
 type CctvApiItem = {
   MNG_NO: string;
-  ING_INST_NM?: string;
+  MNG_INST_NM?: string;
   LCTN_ROAD_NM_ADDR?: string;
   WGS84_LAT?: string;
   WGS84_LOT?: string;
@@ -33,38 +31,40 @@ export type CctvBounds = {
   ne: { lat: number; lng: number };
 };
 
+export async function syncRegionCctv(orgCode: string) {
+  const res = await ky.post("/api/cctv/sync-region", {
+    json: { orgCode },
+    timeout: 60000, // Syncing can take time
+  });
+  return res.json();
+}
+
 export async function fetchCctvInBounds(
   bounds: CctvBounds,
-  page: number = 1,
-  numOfRows: number = 100,
+  opnCode?: string | null,
 ): Promise<CCTV[]> {
   const { sw, ne } = bounds;
 
-  const centerLat = (sw.lat + ne.lat) / 2;
-  const centerLng = (sw.lng + ne.lng) / 2;
+  const searchParams = new URLSearchParams();
+  if (opnCode) {
+    searchParams.set("opnCode", opnCode);
+  } else {
+    // If no opnCode provided, we can fetch by bbox
+    searchParams.set("minLat", String(sw.lat));
+    searchParams.set("maxLat", String(ne.lat));
+    searchParams.set("minLng", String(sw.lng));
+    searchParams.set("maxLng", String(ne.lng));
+  }
 
-  const centerAddress = await coordToAddress(centerLat, centerLng);
-  const opnCode = centerAddress
-    ? await findOpenAtmyCodeByAddress(centerAddress)
-    : null;
-  console.log({ centerAddress, opnCode });
-  const searchParams = new URLSearchParams({
-    pageNo: String(page),
-    numOfRows: String(numOfRows),
-  });
-  if (opnCode) searchParams.set("opnCode", opnCode);
+  const res = await ky.get(`/api/cctv?${searchParams.toString()}`);
+  const raw = await res.json<CctvApiResponse>();
 
-  // ✅ 이제는 우리 서버의 /api/cctv만 호출
-  const res = await ky.get<CctvApiResponse>(
-    `/api/cctv?${searchParams.toString()}`,
-  );
-  const raw = await res.json();
   if (raw.response.header.resultCode !== "0") {
     throw new Error(
       `CCTV API error: ${raw.response.header.resultCode} ${raw.response.header.resultMsg}`,
     );
   }
-  // items가 객체 단일/배열/null로 올 수 있는 경우 모두 처리
+
   const body = raw.response.body;
   const itemsArray: CctvApiItem[] = body.items.item || [];
 
@@ -74,6 +74,9 @@ export async function fetchCctvInBounds(
       const lng = parseFloat(item.WGS84_LOT ?? "");
       if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
 
+      // Even if fetched by orgCode, we might want to filter by bounds on client if needed,
+      // but usually the server can handle it if we pass bbox.
+      // If we only passed opnCode, we should filter here if we want strictly what's in viewport.
       if (!(lat >= sw.lat && lat <= ne.lat && lng >= sw.lng && lng <= ne.lng)) {
         return null;
       }
@@ -84,7 +87,7 @@ export async function fetchCctvInBounds(
         lng,
         direction: "UNKNOWN",
         roadName: item.LCTN_ROAD_NM_ADDR,
-        agency: item.ING_INST_NM,
+        agency: item.MNG_INST_NM,
         source: "SEOUL_OPEN_DATA",
       } as CCTV;
     })
