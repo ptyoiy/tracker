@@ -9,7 +9,7 @@ import { filterCctvByContext } from "../lib/buffer-filter";
 export const allCctvAtom = atom<CCTV[]>([]);
 
 // 이미 로드 완료된 지역 코드(orgCode) 목록
-export const loadedOrgCodesAtom = atom<Set<string>>(new Set());
+export const loadedOrgCodesAtom = atom<Set<string>>(new Set<string>());
 
 // 로딩 상태를 관리하는 Atom
 export const cctvLoadingAtom = atom<boolean>(false);
