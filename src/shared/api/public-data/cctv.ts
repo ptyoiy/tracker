@@ -10,6 +10,8 @@ type CctvApiItem = {
   LCTN_ROAD_NM_ADDR?: string;
   WGS84_LAT?: string;
   WGS84_LOT?: string;
+  INSTL_PRPS_SE_NM?: string;
+  SHT_ANGLE_INFO?: string;
 };
 
 type CctvApiResponse = {
@@ -85,7 +87,8 @@ export async function fetchCctvInBounds(
         id: item.MNG_NO,
         lat,
         lng,
-        direction: "UNKNOWN",
+        direction: item.SHT_ANGLE_INFO || "UNKNOWN",
+        purpose: item.INSTL_PRPS_SE_NM || "알 수 없음",
         roadName: item.LCTN_ROAD_NM_ADDR,
         agency: item.MNG_INST_NM,
         source: "SEOUL_OPEN_DATA",

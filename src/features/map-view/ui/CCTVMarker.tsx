@@ -7,7 +7,7 @@ import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { useAtom, useAtomValue } from "jotai";
-import { Camera, Info, MapPinned, ShieldCheck, X } from "lucide-react";
+import { Camera, Info, MapPinned, ShieldCheck, Target, X } from "lucide-react";
 import { CustomOverlayMap, MapMarker, useMap } from "react-kakao-maps-sdk";
 import { activePopupAtom } from "../model/atoms";
 
@@ -175,6 +175,18 @@ export function CCTVMarkers({ onCenterChange }: Props) {
                             </p>
                             <p className="text-[11px] font-semibold text-slate-700">
                               {c.agency || "미지정"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-start gap-2">
+                          <Target className="w-3.5 h-3.5 text-orange-500 mt-0.5" />
+                          <div className="flex-1">
+                            <p className="text-[9px] text-slate-400 font-bold uppercase">
+                              설치 목적
+                            </p>
+                            <p className="text-[11px] font-semibold text-slate-700">
+                              {c.purpose}
                             </p>
                           </div>
                         </div>

@@ -69,6 +69,7 @@ export function ObservationForm() {
         const formObs = currentFormValues[i];
         if (!formObs) return true;
         return (
+          obs.id !== formObs.id ||
           obs.lat !== formObs.lat ||
           obs.lng !== formObs.lng ||
           toLocalDatetimeInput(obs.timestamp) !== formObs.timestamp
@@ -98,6 +99,7 @@ export function ObservationForm() {
 
       const normalizedObservations = values.observations.map((o) => ({
         ...o,
+        id: o?.id ?? crypto.randomUUID(),
         lat: o?.lat ?? 0,
         lng: o?.lng ?? 0,
         timestamp: o?.timestamp
@@ -160,6 +162,7 @@ export function ObservationForm() {
     const localNow = toLocalDatetimeInput(nowIso);
 
     const newObs = {
+      id: crypto.randomUUID(),
       lat: 37.5665,
       lng: 126.978,
       timestamp: localNow,

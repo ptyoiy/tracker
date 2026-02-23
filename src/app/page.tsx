@@ -15,9 +15,6 @@ export default function Home() {
     <div className="h-dvh flex flex-col bg-background">
       {/* 헤더 */}
       <KakaoLoader />
-      <header className="shrink-0 px-4 py-3 border-b">
-        <h1 className="text-lg font-bold">210 트래커</h1>
-      </header>
 
       {/* 탭 */}
       <Tabs

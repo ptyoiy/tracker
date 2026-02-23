@@ -3,6 +3,7 @@ import { z } from "zod";
 const datetimeLocalRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 
 export const observationRawSchema = z.object({
+  id: z.string(),
   lat: z
     .number({ error: "위도를 입력해주세요" })
     .min(33, "33~38 사이여야 합니다")

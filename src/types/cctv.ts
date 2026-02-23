@@ -1,14 +1,5 @@
 // src/features/cctv-mapping/model/types.ts
-export type CCTVDirection =
-  | "N"
-  | "S"
-  | "E"
-  | "W"
-  | "NE"
-  | "NW"
-  | "SE"
-  | "SW"
-  | "UNKNOWN";
+export type CCTVDirection = string;
 
 export type CCTVSource = "SEOUL_OPEN_DATA" | "ITS" | "OTHER";
 
@@ -17,6 +8,7 @@ export type CCTV = {
   lat: number;
   lng: number;
   direction: CCTVDirection;
+  purpose: string;
   roadName?: string;
   agency?: string;
   source: CCTVSource;

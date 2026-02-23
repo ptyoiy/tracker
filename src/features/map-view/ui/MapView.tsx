@@ -56,6 +56,7 @@ export function MapView() {
     setObservations((prev) => [
       ...prev,
       {
+        id: crypto.randomUUID(),
         lat,
         lng,
         timestamp: new Date().toISOString(),
@@ -99,7 +100,7 @@ export function MapView() {
       >
         {observations.map((obs, idx) => (
           <ObservationMarker
-            key={`${obs.lat}-${obs.lng}-${obs.timestamp}`}
+            key={obs.id}
             index={idx}
             onCenterChange={setMapCenter}
           />
