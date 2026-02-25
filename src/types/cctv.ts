@@ -17,6 +17,7 @@ export type CCTV = {
 export type CCTVFilterContext =
   | { type: "ROUTE"; polyline: [number, number][]; bufferMeters: number }
   | { type: "ISOCHRONE"; polygon: [number, number][][]; bufferMeters?: number }
+  | { type: "RADIUS"; center: [number, number]; radiusMeters: number }
   | {
       type: "VIEWPORT";
       bounds: { sw: [number, number]; ne: [number, number] };

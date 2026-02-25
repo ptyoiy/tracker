@@ -51,6 +51,7 @@ function moveTypeToMode(moveType: number | undefined): TmapTransitLegMode {
 export async function getTransitRoute(
   from: TmapLatLng,
   to: TmapLatLng,
+  searchDttm?: string, // YYYYMMDDHHMM
 ): Promise<TmapTransitRoute | null> {
   const body = {
     startX: from.lng,
@@ -61,6 +62,7 @@ export async function getTransitRoute(
     format: "json",
     reqCoordType: "WGS84GEO",
     resCoordType: "WGS84GEO",
+    searchDttm: searchDttm,
   };
 
   try {
@@ -74,13 +76,14 @@ export async function getTransitRoute(
         timeout: 10000,
       })
       .json<RawTransitResponse>();
+    console.dir(res, { depth: null });
 
     if (!res.features || res.features.length === 0) return null;
 
     const legs: TmapTransitLeg[] = [];
     let totalDistance = 0;
     let totalTime = 0;
-
+    console.dir(res.features, { depth: null });
     for (const feature of res.features) {
       const { properties, geometry } = feature;
       const distanceMeters = properties.distance ?? 0;

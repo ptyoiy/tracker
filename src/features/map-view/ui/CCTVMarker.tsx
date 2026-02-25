@@ -1,4 +1,8 @@
 // src/features/map-view/ui/CCTVMarker.tsx
+
+import { useAtom, useAtomValue } from "jotai";
+import { Camera, Info, MapPinned, ShieldCheck, Target, X } from "lucide-react";
+import { CustomOverlayMap, MapMarker, useMap } from "react-kakao-maps-sdk";
 import {
   filteredCctvAtom,
   hoveredCctvIdAtom,
@@ -6,9 +10,6 @@ import {
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
-import { useAtom, useAtomValue } from "jotai";
-import { Camera, Info, MapPinned, ShieldCheck, Target, X } from "lucide-react";
-import { CustomOverlayMap, MapMarker, useMap } from "react-kakao-maps-sdk";
 import { activePopupAtom } from "../model/atoms";
 
 type Props = {

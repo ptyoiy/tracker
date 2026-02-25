@@ -124,3 +124,8 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* vaul drawer ::after 컨텐츠 가림 버그 수정 */
+[data-vaul-drawer][data-vaul-drawer-direction="bottom"]::after {
+  height: unset !important;
+}

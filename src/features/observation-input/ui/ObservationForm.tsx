@@ -1,15 +1,15 @@
 // src/features/observation-input/ui/ObservationForm.tsx
 "use client";
 
-import { useAnalyze } from "@/features/route-analysis/lib/useAnalyze";
-import { useIsochrone } from "@/features/map-view/lib/useIsochrone";
-import { Button } from "@/shared/ui/button";
-import { Card } from "@/shared/ui/card";
-import { Input } from "@/shared/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAtom, useSetAtom } from "jotai";
 import { useEffect, useRef } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
+import { useIsochrone } from "@/features/map-view/lib/useIsochrone";
+import { useAnalyze } from "@/features/route-analysis/lib/useAnalyze";
+import { Button } from "@/shared/ui/button";
+import { Card } from "@/shared/ui/card";
+import { Input } from "@/shared/ui/input";
 import {
   futureMinutesAtom,
   observationFormAtom,

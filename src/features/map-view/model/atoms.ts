@@ -19,8 +19,22 @@ export type ActivePopup =
   | { type: "observation"; index: number }
   | null;
 
+export type MapLayerVisibility = {
+  cctv: boolean;
+  isochrone: boolean;
+  route: boolean;
+  observations: boolean;
+};
+
 export const isochroneAtom = atom<IsochroneState | null>(null);
 
 export const viewportAtom = atom<ViewportBounds | null>(null);
 
 export const activePopupAtom = atom<ActivePopup>(null);
+
+export const mapLayersAtom = atom<MapLayerVisibility>({
+  cctv: true,
+  isochrone: true,
+  route: true,
+  observations: true,
+});

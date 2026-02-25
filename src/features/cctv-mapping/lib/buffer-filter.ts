@@ -5,6 +5,7 @@ import {
   point,
   polygon,
 } from "@turf/turf";
+import { getDistanceKm } from "@/shared/lib/geo/distance";
 import type { CCTV, CCTVFilterContext } from "@/types/cctv";
 
 export function filterCctvByContext(
@@ -43,6 +44,17 @@ export function filterCctvByContext(
       cctvs,
       effectivePoly.geometry.coordinates as [number, number][][],
     );
+  }
+
+  if (ctx.type === "RADIUS") {
+    const { center, radiusMeters } = ctx;
+    return cctvs.filter((c) => {
+      const distance = getDistanceKm(
+        { lat: center[1], lng: center[0] },
+        { lat: c.lat, lng: c.lng },
+      );
+      return distance * 1000 <= radiusMeters;
+    });
   }
 
   // VIEWPORT: 단순 bbox

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { filterRoutesByTime } from "./filter";
+import { filterRoutesByTime } from "../filter";
 
 describe("filterRoutesByTime", () => {
   it("허용 오차 내의 경로만 통과시킨다", () => {

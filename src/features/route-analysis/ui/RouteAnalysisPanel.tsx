@@ -14,7 +14,7 @@ export function RouteListPanel() {
   const segments = useAtomValue(segmentAnalysesAtom);
   const loading = useAtomValue(analyzeLoadingAtom);
   const error = useAtomValue(analyzeErrorAtom);
-  const selectedRoutes = useAtomValue(selectedRouteInfosAtom);
+  const _selectedRoutes = useAtomValue(selectedRouteInfosAtom);
 
   if (loading) {
     return <div className="text-sm text-gray-600">경로 분석 중…</div>;

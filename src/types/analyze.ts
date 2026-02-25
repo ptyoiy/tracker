@@ -2,7 +2,13 @@ import type { Observation } from "./observation";
 
 // 분석 요청/응답 (route-analysis API)
 export type TransportMode = "walking" | "transit" | "vehicle";
-export type RouteLegMode = "WALK" | "BUS" | "SUBWAY" | "CAR";
+export type RouteLegMode =
+  | "WALK"
+  | "BUS"
+  | "SUBWAY"
+  | "CAR"
+  | "TRAIN"
+  | "EXPRESSBUS";
 
 export type RouteLeg = {
   mode: RouteLegMode;
@@ -16,7 +22,8 @@ export type RouteInfo = {
   totalDistanceKm: number;
   totalDurationSeconds: number;
   legs: RouteLeg[];
-  primaryMode: TransportMode; // 'walking' | 'transit' | 'vehicle'
+  primaryMode: TransportMode;
+  isReasonable: boolean; // 실제 경과 시간과의 유사성 여부
 };
 
 export type SegmentAnalysis = {

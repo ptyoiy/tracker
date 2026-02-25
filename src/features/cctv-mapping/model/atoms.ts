@@ -35,11 +35,29 @@ export const appendCctvDataAtom = atom(
   },
 );
 
+// 독립 검색 모드용 Atom
+export const cctvSearchCenterAtom = atom<{ lat: number; lng: number } | null>(
+  null,
+);
+export const cctvSearchRadiusAtom = atom<number>(200); // 기본 반경 200m
+
 // 선택 경로 주변 100m + 현재 뷰포트 안에 있는 CCTV만
 export const filteredCctvAtom = atom<CCTV[]>((get) => {
   const all = get(allCctvAtom);
   const selectedRoutes = get(selectedRouteInfosAtom);
+  const searchCenter = get(cctvSearchCenterAtom);
+  const searchRadius = get(cctvSearchRadiusAtom);
 
+  // 1. 독립 검색 모드인 경우 (검색 중심이 설정되어 있을 때)
+  if (searchCenter) {
+    return filterCctvByContext(all, {
+      type: "RADIUS",
+      center: [searchCenter.lng, searchCenter.lat],
+      radiusMeters: searchRadius,
+    });
+  }
+
+  // 2. 경로 분석 모드인 경우
   // 1) 경로가 선택되지 않았으면 아무것도 표시하지 않음 (사용성 개선)
   if (!all.length || selectedRoutes.length === 0) return [];
 
