@@ -1,11 +1,10 @@
 // src/features/route-analysis/ui/RouteAnalysisPanel.tsx
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { useAtomValue } from "jotai";
 import { AlertCircle, ArrowRight, Navigation } from "lucide-react";
+import { useAnalyzeQuery } from "@/features/observation-input/lib/useAnalyzeQuery";
 import { observationsAtom } from "@/features/observation-input/model/atoms";
-import { analyzeQueries } from "@/shared/api/queries";
 import { cn } from "@/shared/lib/utils";
 import {
   Accordion,
@@ -25,12 +24,7 @@ export function RouteListPanel() {
     data,
     isLoading: loading,
     error,
-  } = useQuery(
-    analyzeQueries.segments(
-      lastParams?.observations,
-      lastParams?.futureMinutes,
-    ),
-  );
+  } = useAnalyzeQuery(lastParams?.observations, lastParams?.futureMinutes);
 
   const segments = data?.segments;
   const isStale = analysisResult.stale;

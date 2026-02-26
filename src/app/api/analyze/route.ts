@@ -3,7 +3,10 @@ import { type NextRequest, NextResponse } from "next/server";
 import { analyzeSegment } from "@/shared/api/analyze/segment";
 import { getDrivingRoute } from "@/shared/api/tmap/driving";
 import { getPedestrianRoute } from "@/shared/api/tmap/pedestrian";
-// import { getTransitRoute } from "@/shared/api/tmap/transit";
+import {
+  getTransitRoute,
+  type TmapTransitLegMode,
+} from "@/shared/api/tmap/transit";
 import type {
   AnalyzeRequest,
   AnalyzeResponse,
@@ -36,14 +39,15 @@ export async function POST(request: NextRequest) {
       const segmentId = `${i}-${i + 1}`;
 
       // 대중교통 조회를 위한 시간 포맷팅 (YYYYMMDDHHMM)
-      const _searchDttm = format(new Date(from.timestamp), "yyyyMMddHHmm");
+      const searchDttm = format(new Date(from.timestamp), "yyyyMMddHHmm");
 
       // 3개 수단 병렬 호출
-      const [pedResult, drivResult, _transResult] = await Promise.allSettled([
+      const [pedResult, drivResult, transResult] = await Promise.allSettled([
         getPedestrianRoute(from, to),
         getDrivingRoute(from, to),
         // 요청 한도가 일일 10개로 매우 부족하니까 일단 실패로 넣고 필요할 때만 주석 빼서 테스트하기.
-        Promise.reject(), //getTransitRoute(from, to, searchDttm),
+        //Promise.reject(),
+        getTransitRoute(from, to, searchDttm),
       ]);
 
       // 1. 도보 경로 처리
@@ -93,25 +97,25 @@ export async function POST(request: NextRequest) {
       }
 
       // 3. 대중교통 경로 처리
-      // if (transResult.status === "fulfilled" && transResult.value) {
-      //   const trans = transResult.value;
-      //   const duration = trans.durationSeconds;
-      //   const isReasonable =
-      //     Math.abs(duration - basic.duration) / basic.duration <= 0.3;
-      //   candidateRoutes.push({
-      //     id: `${segmentId}-transit`,
-      //     totalDistanceKm: trans.distanceMeters / 1000,
-      //     totalDurationSeconds: duration,
-      //     primaryMode: "transit",
-      //     isReasonable,
-      //     legs: trans.legs.map((leg) => ({
-      //       mode: leg.mode as any, // BUS, SUBWAY, WALK 등
-      //       distanceKm: leg.distanceMeters / 1000,
-      //       durationSeconds: leg.durationSeconds,
-      //       polyline: leg.polyline,
-      //     })),
-      //   });
-      // }
+      if (transResult.status === "fulfilled" && transResult.value) {
+        const trans = transResult.value;
+        const duration = trans.durationSeconds;
+        const isReasonable =
+          Math.abs(duration - basic.duration) / basic.duration <= 0.3;
+        candidateRoutes.push({
+          id: `${segmentId}-transit`,
+          totalDistanceKm: trans.distanceMeters / 1000,
+          totalDurationSeconds: duration,
+          primaryMode: "transit",
+          isReasonable,
+          legs: trans.legs.map((leg) => ({
+            mode: leg.mode as TmapTransitLegMode, // BUS, SUBWAY, WALK 등
+            distanceKm: leg.distanceMeters / 1000,
+            durationSeconds: leg.durationSeconds,
+            polyline: leg.polyline,
+          })),
+        });
+      }
 
       // 모든 API가 실패했거나 결과가 없을 경우 fallbackUsed 체크
       if (candidateRoutes.length === 0) {

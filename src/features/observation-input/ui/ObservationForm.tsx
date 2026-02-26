@@ -7,7 +7,6 @@ import { Plus } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { useIsochrone } from "@/features/map-view/lib/useIsochrone";
-import { useAnalyzeMutation } from "@/features/route-analysis/api/useAnalyzeMutation";
 import {
   analysisResultAtom,
   lastAnalysisParamsAtom,
@@ -17,6 +16,7 @@ import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { Slider } from "@/shared/ui/slider";
 import { activeSectionAtom, bottomSheetSnapAtom } from "@/store/atoms";
+import { useAnalyzeQuery } from "../lib/useAnalyzeQuery";
 import {
   committedFutureMinutesAtom,
   futureMinutesAtom,
@@ -39,9 +39,6 @@ function toLocalDatetimeInput(iso?: string) {
   return new Date(d.getTime() - offset).toISOString().slice(0, 16);
 }
 
-import { useQuery } from "@tanstack/react-query";
-import { analyzeQueries } from "@/shared/api/queries";
-
 export function ObservationForm() {
   const [observationsAtomValue, setObservations] = useAtom(observationsAtom);
   const [currentFutureMinutes, setFutureMinutes] = useAtom(futureMinutesAtom);
@@ -49,16 +46,13 @@ export function ObservationForm() {
   const analysisResult = useAtomValue(analysisResultAtom);
   const [lastParams, setLastParams] = useAtom(lastAnalysisParamsAtom);
 
-  const { data: analysisData } = useQuery(
-    analyzeQueries.segments(
-      lastParams?.observations,
-      lastParams?.futureMinutes,
-    ),
+  const { data: analysisData, isFetching: isAnalyzing } = useAnalyzeQuery(
+    lastParams?.observations,
+    lastParams?.futureMinutes,
   );
 
   const hasSegments =
     !!analysisData?.segments && analysisData.segments.length > 0;
-  const { mutateAsync: analyze, isPending: isAnalyzing } = useAnalyzeMutation();
   const setObservationForm = useSetAtom(observationFormAtom);
   const setActiveSection = useSetAtom(activeSectionAtom);
   const setSnap = useSetAtom(bottomSheetSnapAtom);
@@ -182,7 +176,6 @@ export function ObservationForm() {
       observations: normalizedObservations,
       futureMinutes: values.futureMinutes,
     });
-    void analyze(normalized);
     void computeIsochrone("walking");
 
     // 경로 분석 결과 탭 자동 활성화 및 Drawer 상태 변경

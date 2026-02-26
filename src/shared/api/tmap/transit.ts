@@ -1,3 +1,4 @@
+// src/shared/api/tmap/transit.ts
 import ky from "ky";
 import { env } from "@/shared/config/env";
 import type { TmapLatLng } from "./types";
@@ -17,35 +18,58 @@ export type TmapTransitRoute = {
   legs: TmapTransitLeg[];
 };
 
-type RawTransitFeatureGeometry = {
-  type: string;
-  coordinates: number[][] | number[][][];
-};
-
-type RawTransitFeatureProperties = {
+type RawTransitLeg = {
+  mode: string; // "WALK" | "BUS" | "SUBWAY" | ...
   distance?: number;
-  time?: number;
-  moveType?: number; // 1: 도보, 2: 버스, 3: 지하철 등 (TMAP 문서 기준)
-  // 필요한 필드는 차차 추가
+  sectionTime?: number;
+  // 도보 구간의 좌표
+  steps?: {
+    linestring?: string; // "lon,lat lon,lat ..."
+  }[];
+  // 버스/지하철 구간의 좌표
+  passShape?: {
+    linestring?: string; // "lon,lat lon,lat ..."
+  };
 };
 
-type RawTransitFeature = {
-  type: "Feature";
-  geometry: RawTransitFeatureGeometry;
-  properties: RawTransitFeatureProperties;
+type RawTransitItinerary = {
+  totalTime?: number;
+  totalDistance?: number;
+  legs?: RawTransitLeg[];
 };
 
 type RawTransitResponse = {
-  type: "FeatureCollection";
-  features: RawTransitFeature[];
+  metaData?: {
+    plan?: {
+      itineraries?: RawTransitItinerary[];
+    };
+  };
 };
 
 const TMAP_TRANSIT_URL = "https://apis.openapi.sk.com/transit/routes";
 
-function moveTypeToMode(moveType: number | undefined): TmapTransitLegMode {
-  if (moveType === 2) return "BUS";
-  if (moveType === 3) return "SUBWAY";
+function toLegMode(mode: string | undefined): TmapTransitLegMode {
+  if (mode === "BUS") return "BUS";
+  if (mode === "SUBWAY" || mode === "TRAIN") return "SUBWAY";
   return "WALK";
+}
+
+function parseLinestring(linestring?: string): TmapLatLng[] {
+  if (!linestring) return [];
+  const points: TmapLatLng[] = [];
+
+  // "lon,lat lon,lat ..." 형식을 파싱
+  linestring.split(" ").forEach((pair) => {
+    const [lngStr, latStr] = pair.split(",");
+    if (!lngStr || !latStr) return;
+    const lng = Number(lngStr);
+    const lat = Number(latStr);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      points.push({ lat, lng });
+    }
+  });
+
+  return points;
 }
 
 export async function getTransitRoute(
@@ -62,7 +86,7 @@ export async function getTransitRoute(
     format: "json",
     reqCoordType: "WGS84GEO",
     resCoordType: "WGS84GEO",
-    searchDttm: searchDttm,
+    searchDttm,
   };
 
   try {
@@ -76,38 +100,43 @@ export async function getTransitRoute(
         timeout: 10000,
       })
       .json<RawTransitResponse>();
-    console.dir(res, { depth: null });
 
-    if (!res.features || res.features.length === 0) return null;
+    const itineraries = res.metaData?.plan?.itineraries;
+    console.dir(itineraries, { depth: 3 });
+    if (!itineraries || itineraries.length === 0) return null;
+    // 일단 첫 번째(추천) 경로만 사용
+    const first = itineraries[0];
+    const rawLegs = first.legs ?? [];
+    if (rawLegs.length === 0) return null;
 
     const legs: TmapTransitLeg[] = [];
-    let totalDistance = 0;
-    let totalTime = 0;
-    console.dir(res.features, { depth: null });
-    for (const feature of res.features) {
-      const { properties, geometry } = feature;
-      const distanceMeters = properties.distance ?? 0;
-      const durationSeconds = properties.time ?? 0;
 
-      totalDistance += distanceMeters;
-      totalTime += durationSeconds;
+    // 총 거리/시간은 응답에 있으면 그대로 쓰고, 없으면 legs 합산
+    let totalDistance = first.totalDistance ?? 0;
+    let totalTime = first.totalTime ?? 0;
 
-      const mode = moveTypeToMode(properties.moveType);
+    if (!totalDistance || !totalTime) {
+      totalDistance = 0;
+      totalTime = 0;
+      rawLegs.forEach((leg) => {
+        totalDistance += leg.distance ?? 0;
+        totalTime += leg.sectionTime ?? 0;
+      });
+    }
 
-      const polyline: TmapLatLng[] = [];
+    for (const leg of rawLegs) {
+      const mode = toLegMode(leg.mode);
+      const distanceMeters = leg.distance ?? 0;
+      const durationSeconds = leg.sectionTime ?? 0;
 
-      if (geometry.type === "LineString") {
-        const coords = geometry.coordinates as number[][];
-        coords.forEach(([lng, lat]) => {
-          polyline.push({ lat, lng });
-        });
-      } else if (geometry.type === "MultiLineString") {
-        const coords = geometry.coordinates as number[][][];
-        coords.forEach((line) => {
-          line.forEach(([lng, lat]) => {
-            polyline.push({ lat, lng });
-          });
-        });
+      let polyline: TmapLatLng[] = [];
+
+      if (mode === "WALK" && leg.steps && leg.steps.length > 0) {
+        // 도보는 steps[].linestring을 이어붙인다.
+        polyline = leg.steps.flatMap((s) => parseLinestring(s.linestring));
+      } else {
+        // 버스/지하철 등은 passShape.linestring 사용
+        polyline = parseLinestring(leg.passShape?.linestring);
       }
 
       legs.push({
@@ -123,7 +152,8 @@ export async function getTransitRoute(
       durationSeconds: totalTime,
       legs,
     };
-  } catch {
+  } catch (err) {
+    console.error("[TMAP transit] getTransitRoute error", err);
     return null;
   }
 }

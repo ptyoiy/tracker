@@ -1,20 +1,17 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { useAtomValue } from "jotai";
 import { useMemo } from "react";
-import { analyzeQueries } from "@/shared/api/queries";
+import { useAnalyzeQuery } from "@/features/observation-input/lib/useAnalyzeQuery";
 import { lastAnalysisParamsAtom, selectedRouteIdsAtom } from "../model/atoms";
 
 export function useSelectedRoutes() {
   const lastParams = useAtomValue(lastAnalysisParamsAtom);
   const selectedRouteIds = useAtomValue(selectedRouteIdsAtom);
 
-  const { data: analysisData } = useQuery(
-    analyzeQueries.segments(
-      lastParams?.observations,
-      lastParams?.futureMinutes,
-    ),
+  const { data: analysisData } = useAnalyzeQuery(
+    lastParams?.observations,
+    lastParams?.futureMinutes,
   );
 
   return useMemo(() => {

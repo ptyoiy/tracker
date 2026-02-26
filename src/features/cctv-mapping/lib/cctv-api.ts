@@ -1,8 +1,8 @@
 // src/features/cctv-mapping/lib/cctv-api.ts
-import { useQuery } from "@tanstack/react-query";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useEffect } from "react";
 import { viewportAtom } from "@/features/map-view/model/atoms";
+import { useAnalyzeQuery } from "@/features/observation-input/lib/useAnalyzeQuery";
 import { lastAnalysisParamsAtom } from "@/features/route-analysis/model/atoms";
 import { coordToAddress } from "@/shared/api/kakao/geocoder";
 import {
@@ -10,7 +10,6 @@ import {
   syncRegionCctv,
 } from "@/shared/api/public-data/cctv";
 import { findOpenAtmyCodeByAddress } from "@/shared/api/public-data/open-atmy-grp";
-import { analyzeQueries } from "@/shared/api/queries";
 import {
   appendCctvDataAtom,
   cctvLoadingAtom,
@@ -25,11 +24,9 @@ export function useLoadCctvOnce() {
   const lastParams = useAtomValue(lastAnalysisParamsAtom);
 
   // 경로 분석 결과 감시
-  const { data: analysisData } = useQuery(
-    analyzeQueries.segments(
-      lastParams?.observations,
-      lastParams?.futureMinutes,
-    ),
+  const { data: analysisData } = useAnalyzeQuery(
+    lastParams?.observations,
+    lastParams?.futureMinutes,
   );
 
   // 1) 초기 4개 구역 선행 로딩 및 경로 주변 자동 로딩

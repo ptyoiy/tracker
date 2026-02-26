@@ -4,11 +4,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useAtomValue } from "jotai";
 import { useMemo } from "react";
 import { viewportAtom } from "@/features/map-view/model/atoms";
+import { useAnalyzeQuery } from "@/features/observation-input/lib/useAnalyzeQuery";
 import {
   lastAnalysisParamsAtom,
   selectedRouteIdsAtom,
 } from "@/features/route-analysis/model/atoms";
-import { analyzeQueries, cctvQueries } from "@/shared/api/queries";
+import { cctvQueries } from "@/shared/api/queries";
 import {
   allCctvAtom,
   cctvSearchCenterAtom,
@@ -25,11 +26,9 @@ export function useFilteredCctv() {
   const searchRadius = useAtomValue(cctvSearchRadiusAtom);
 
   // 1. 경로 분석 데이터 가져오기
-  const { data: analysisData } = useQuery(
-    analyzeQueries.segments(
-      lastParams?.observations,
-      lastParams?.futureMinutes,
-    ),
+  const { data: analysisData } = useAnalyzeQuery(
+    lastParams?.observations,
+    lastParams?.futureMinutes,
   );
 
   // 2. 수동 검색 결과 (React Query)
