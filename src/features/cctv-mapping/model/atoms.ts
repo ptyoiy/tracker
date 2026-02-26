@@ -41,51 +41,70 @@ export const cctvSearchCenterAtom = atom<{ lat: number; lng: number } | null>(
 );
 export const cctvSearchRadiusAtom = atom<number>(200); // 기본 반경 200m
 
-// 선택 경로 주변 100m + 현재 뷰포트 안에 있는 CCTV만
-export const filteredCctvAtom = atom<CCTV[]>((get) => {
+// 독립 검색 모드용 CCTV 결과
+export const manualSearchCctvAtom = atom<CCTV[]>((get) => {
+  const all = get(allCctvAtom);
+  const searchCenter = get(cctvSearchCenterAtom);
+  const searchRadius = Math.min(get(cctvSearchRadiusAtom), 1500); // 1500m 제한
+
+  if (!searchCenter) return [];
+
+  return filterCctvByContext(all, {
+    type: "RADIUS",
+    center: [searchCenter.lng, searchCenter.lat],
+    radiusMeters: searchRadius,
+  });
+});
+
+// 경로 기반 자동 검색 CCTV 결과
+export const routeCctvAtom = atom<CCTV[]>((get) => {
   const all = get(allCctvAtom);
   const selectedRoutes = get(selectedRouteInfosAtom);
-  const searchCenter = get(cctvSearchCenterAtom);
-  const searchRadius = get(cctvSearchRadiusAtom);
-
-  // 1. 독립 검색 모드인 경우 (검색 중심이 설정되어 있을 때)
-  if (searchCenter) {
-    return filterCctvByContext(all, {
-      type: "RADIUS",
-      center: [searchCenter.lng, searchCenter.lat],
-      radiusMeters: searchRadius,
-    });
-  }
-
-  // 2. 경로 분석 모드인 경우
-  // 1) 경로가 선택되지 않았으면 아무것도 표시하지 않음 (사용성 개선)
-  if (!all.length || selectedRoutes.length === 0) return [];
-
   const viewport = get(viewportAtom);
 
-  let candidates = all;
+  if (!all.length || selectedRoutes.length === 0) return [];
 
-  // 2) 선택된 경로 주변 100m로 1차 필터
   const polyline = selectedRoutes
     .flatMap((route) => route.legs.flatMap((leg) => leg.polyline))
     .map((p) => [p.lng, p.lat] as [number, number]);
 
-  candidates = filterCctvByContext(candidates, {
+  let candidates = filterCctvByContext(all, {
     type: "ROUTE",
     polyline,
     bufferMeters: 100,
   });
 
-  // 3) 뷰포트로 2차 제한 (현재 보이는 화면만)
   if (viewport) {
     const { sw, ne } = viewport;
+    // 250m 버퍼 추가 (약 0.00225도)
+    const BUFFER = 0.00225;
     candidates = filterCctvByContext(candidates, {
       type: "VIEWPORT",
-      bounds: { sw: [sw.lng, sw.lat], ne: [ne.lng, ne.lat] },
+      bounds: {
+        sw: [sw.lng - BUFFER, sw.lat - BUFFER],
+        ne: [ne.lng + BUFFER, ne.lat + BUFFER],
+      },
     });
   }
 
   return candidates;
+});
+
+// 전체 지도에 표시할 CCTV (두 레이어 합침, 중복 제거)
+export const filteredCctvAtom = atom<CCTV[]>((get) => {
+  const manual = get(manualSearchCctvAtom);
+  const route = get(routeCctvAtom);
+
+  // 수동 검색 중이면 수동 검색 결과만 보여줄지, 합쳐서 보여줄지 결정
+  // "검색 시 해당 반경 내 CCTV만 지도에 표시" -> 수동 검색 활성화 시 수동 검색만?
+  // 하지만 "별도 레이어" -> 둘 다 보여주되 시각적으로 구분?
+  // 여기서는 합치되 수동 검색이 있으면 그것을 우선시하거나 둘 다 보여줌.
+  // 사용자의 명확한 요구사항인 "해당 반경 내 CCTV만 지도에 표시"를 따라 수동 검색 시 수동 검색만 반환.
+  if (manual.length > 0 || get(cctvSearchCenterAtom)) {
+    return manual;
+  }
+
+  return route;
 });
 
 // 리스트 / 지도 공유 hover용 상태

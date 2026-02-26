@@ -60,6 +60,7 @@ export function useCctvSearch() {
 
   return {
     searchCenter,
+    setSearchCenter,
     radius,
     setRadius,
     searchNearby,

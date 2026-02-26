@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       const _searchDttm = format(new Date(from.timestamp), "yyyyMMddHHmm");
 
       // 3개 수단 병렬 호출
-      const [pedResult, drivResult, transResult] = await Promise.allSettled([
+      const [pedResult, drivResult, _transResult] = await Promise.allSettled([
         getPedestrianRoute(from, to),
         getDrivingRoute(from, to),
         // 요청 한도가 일일 10개로 매우 부족하니까 일단 실패로 넣고 필요할 때만 주석 빼서 테스트하기.

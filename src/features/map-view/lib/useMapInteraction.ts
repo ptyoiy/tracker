@@ -1,9 +1,8 @@
 // src/features/map-view/lib/useMapInteraction.ts
 "use client";
 
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { useAtom, useSetAtom } from "jotai";
 import { useCallback } from "react";
-import { useCctvSearch } from "@/features/cctv-mapping/lib/useCctvSearch";
 import { observationsAtom } from "@/features/observation-input/model/atoms";
 import {
   transitLookupEndAtom,
@@ -11,19 +10,16 @@ import {
   transitLookupStartAtom,
 } from "@/features/transit-lookup/model/atoms";
 import { fullGeocode } from "@/shared/api/kakao/geocoder";
-import { activeSectionAtom } from "@/store/atoms";
 import { activePopupAtom } from "../model/atoms";
 
 export function useMapInteraction(
   panToWithOffset: (lat: number, lng: number) => void,
 ) {
-  const activeSection = useAtomValue(activeSectionAtom);
   const setObservations = useSetAtom(observationsAtom);
   const [activePopup, setActivePopup] = useAtom(activePopupAtom);
   const [picking, setPicking] = useAtom(transitLookupPickingAtom);
   const setTransitStart = useSetAtom(transitLookupStartAtom);
   const setTransitEnd = useSetAtom(transitLookupEndAtom);
-  const { searchNearby } = useCctvSearch();
 
   const handleMapClick = useCallback(
     async (_t: kakao.maps.Map, mouseEvent: kakao.maps.event.MouseEvent) => {
@@ -40,12 +36,6 @@ export function useMapInteraction(
         if (picking === "start") setTransitStart({ lat, lng });
         else setTransitEnd({ lat, lng });
         setPicking(null);
-        panToWithOffset(lat, lng);
-        return;
-      }
-
-      if (activeSection === "cctv") {
-        searchNearby(lat, lng);
         panToWithOffset(lat, lng);
         return;
       }
@@ -71,8 +61,6 @@ export function useMapInteraction(
       setPicking,
       setTransitStart,
       setTransitEnd,
-      activeSection,
-      searchNearby,
       setObservations,
       panToWithOffset,
     ],

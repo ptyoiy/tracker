@@ -62,12 +62,35 @@ export function useMapViewport(mapRef: RefObject<kakao.maps.Map | null>) {
       const bounds = map.getBounds();
       const sw = bounds.getSouthWest();
       const ne = bounds.getNorthEast();
+      const center = map.getCenter();
+
+      // 바텀 시트 snap에 따른 visual center 계산 (화면상에서 가려지지 않은 부분의 중심)
+      let offsetRatio = 0;
+      if (snap === 0.5) offsetRatio = 0.25;
+      else if (snap === 0.9) offsetRatio = 0.45;
+
+      const projection = map.getProjection();
+      const centerPoint = projection.pointFromCoords(center);
+      const offsetPixel = map.getNode().offsetHeight * offsetRatio;
+
+      // 지도의 기하학적 중심보다 offset만큼 위(y가 작음)에 있는 좌표를 visualCenter로 계산
+      const visualCenterPoint = new kakao.maps.Point(
+        centerPoint.x,
+        centerPoint.y - offsetPixel,
+      );
+      const visualCenterLatLng = projection.coordsFromPoint(visualCenterPoint);
+
       setViewport({
         sw: { lat: sw.getLat(), lng: sw.getLng() },
         ne: { lat: ne.getLat(), lng: ne.getLng() },
+        center: { lat: center.getLat(), lng: center.getLng() },
+        visualCenter: {
+          lat: visualCenterLatLng.getLat(),
+          lng: visualCenterLatLng.getLng(),
+        },
       });
     },
-    [setViewport],
+    [setViewport, snap],
   );
 
   const recenter = useCallback(() => {

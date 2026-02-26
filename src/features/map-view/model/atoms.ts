@@ -13,6 +13,8 @@ export type IsochroneState = {
 export type ViewportBounds = {
   sw: { lat: number; lng: number };
   ne: { lat: number; lng: number };
+  center: { lat: number; lng: number };
+  visualCenter: { lat: number; lng: number };
 };
 
 export type ActivePopup =

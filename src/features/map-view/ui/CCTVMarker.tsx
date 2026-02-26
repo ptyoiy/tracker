@@ -2,8 +2,15 @@
 
 import { useAtom, useAtomValue } from "jotai";
 import { Camera, Info, MapPinned, ShieldCheck, Target, X } from "lucide-react";
-import { CustomOverlayMap, MapMarker, useMap } from "react-kakao-maps-sdk";
 import {
+  Circle,
+  CustomOverlayMap,
+  MapMarker,
+  useMap,
+} from "react-kakao-maps-sdk";
+import {
+  cctvSearchCenterAtom,
+  cctvSearchRadiusAtom,
   filteredCctvAtom,
   hoveredCctvIdAtom,
 } from "@/features/cctv-mapping/model/atoms";
@@ -18,11 +25,11 @@ type Props = {
 
 export function CCTVMarkers({ onCenterChange }: Props) {
   const cctvs = useAtomValue(filteredCctvAtom);
+  const searchCenter = useAtomValue(cctvSearchCenterAtom);
+  const searchRadius = useAtomValue(cctvSearchRadiusAtom);
   const hoveredId = useAtomValue(hoveredCctvIdAtom);
   const [activePopup, setActivePopup] = useAtom(activePopupAtom);
   const map = useMap();
-
-  if (!cctvs.length) return null;
 
   const selectedId = activePopup?.type === "cctv" ? activePopup.id : null;
   const setSelectedId = (
@@ -78,6 +85,20 @@ export function CCTVMarkers({ onCenterChange }: Props) {
 
   return (
     <>
+      {/* 검색 반경 시각화 */}
+      {searchCenter && (
+        <Circle
+          center={searchCenter}
+          radius={searchRadius}
+          strokeWeight={2}
+          strokeColor="#3b82f6"
+          strokeOpacity={0.8}
+          strokeStyle="dash"
+          fillColor="#3b82f6"
+          fillOpacity={0.1}
+        />
+      )}
+
       {cctvs.map((c) => {
         const isHovered = c.id === hoveredId;
         const isSelected = c.id === selectedId;
