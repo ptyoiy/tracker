@@ -10,6 +10,7 @@ import {
   Navigation,
   Shield,
 } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { useLoadCctvOnce } from "@/features/cctv-mapping/lib/cctv-api";
 import { useComputeRouteCctvCount } from "@/features/cctv-mapping/lib/route-cctv-count";
 import { CCTVSearchTab } from "@/features/cctv-mapping/ui/CCTVSearchTab";
@@ -46,9 +47,22 @@ export default function Home() {
   const [isOpen, setIsOpen] = useAtom(bottomSheetOpenAtom);
   const [snap, setSnap] = useAtom(bottomSheetSnapAtom);
   const [activeSection, setActiveSection] = useAtom(activeSectionAtom);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const observations = useAtomValue(observationsAtom);
   const selectedRoutes = useAtomValue(selectedRouteInfosAtom);
+
+  useEffect(() => {
+    if (activeSection) {
+      const timer = setTimeout(() => {
+        const element = document.getElementById(`section-${activeSection}`);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [activeSection]);
 
   const lastObs =
     observations.length > 0 ? observations[observations.length - 1] : null;
@@ -81,7 +95,7 @@ export default function Home() {
           onOpenChange={(open) => !open && setIsOpen(true)} // 닫힘 방지
           snapPoints={snapPoints}
           activeSnapPoint={snap}
-          setActiveSnapPoint={setSnap}
+          setActiveSnapPoint={(sp) => sp && setSnap(sp)}
           modal={false}
           dismissible={false}
           fadeFromIndex={2}
@@ -99,7 +113,7 @@ export default function Home() {
               type="button"
               aria-label={`제어판 높이 조절 (현재: ${snap === "84px" ? "최소" : snap === 0.5 ? "중간" : "최대"})`}
               className={cn(
-                "w-full h-[84px] px-4 pt-4 pb-3 border-b flex items-center justify-between transition-all sticky top-0 z-20 shrink-0",
+                "w-full h-[64px] px-4 pt-4 pb-3 border-b flex items-center justify-between transition-all sticky top-0 z-20 shrink-0",
                 "bg-white/95 backdrop-blur-md hover:bg-gray-50 active:bg-gray-100 active:scale-[0.98] touch-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
               )}
               onClick={toggleSnap}
@@ -145,7 +159,18 @@ export default function Home() {
             </button>
 
             {/* Content Area */}
-            <div className="flex-1 overflow-y-auto px-4 pb-12 bg-white">
+            <div
+              ref={scrollContainerRef}
+              className="overflow-y-auto px-4 pb-12 bg-white transition-all duration-300 ease-in-out"
+              style={{
+                height:
+                  snap === "84px"
+                    ? "0px"
+                    : typeof snap === "number"
+                      ? `calc(${snap * 100}vh - 84px)`
+                      : "calc(100vh - 84px)",
+              }}
+            >
               <Accordion
                 type="single"
                 collapsible
@@ -160,9 +185,10 @@ export default function Home() {
               >
                 <AccordionItem
                   value="observation"
+                  id="section-observation"
                   className="border-b-gray-100"
                 >
-                  <AccordionTrigger className="hover:no-underline py-5 group">
+                  <AccordionTrigger className="hover:no-underline py-3.5 group">
                     <div className="flex items-center gap-3 text-gray-900 transition-transform group-active:scale-95">
                       <div className="p-2.5 bg-red-50 rounded-xl">
                         <MapPin className="w-5 h-5 text-red-500" />
@@ -177,8 +203,12 @@ export default function Home() {
                   </AccordionContent>
                 </AccordionItem>
 
-                <AccordionItem value="route" className="border-b-gray-100">
-                  <AccordionTrigger className="hover:no-underline py-5 group">
+                <AccordionItem
+                  value="route"
+                  id="section-route"
+                  className="border-b-gray-100"
+                >
+                  <AccordionTrigger className="hover:no-underline py-3.5 group">
                     <div className="flex items-center gap-3 text-gray-900 transition-transform group-active:scale-95">
                       <div className="p-2.5 bg-blue-50 rounded-xl">
                         <Navigation className="w-5 h-5 text-blue-500" />
@@ -193,8 +223,12 @@ export default function Home() {
                   </AccordionContent>
                 </AccordionItem>
 
-                <AccordionItem value="isochrone" className="border-b-gray-100">
-                  <AccordionTrigger className="hover:no-underline py-5 group">
+                <AccordionItem
+                  value="isochrone"
+                  id="section-isochrone"
+                  className="border-b-gray-100"
+                >
+                  <AccordionTrigger className="hover:no-underline py-3.5 group">
                     <div className="flex items-center gap-3 text-gray-900 transition-transform group-active:scale-95">
                       <div className="p-2.5 bg-purple-50 rounded-xl">
                         <Info className="w-5 h-5 text-purple-500" />
@@ -209,8 +243,12 @@ export default function Home() {
                   </AccordionContent>
                 </AccordionItem>
 
-                <AccordionItem value="cctv" className="border-b-gray-100">
-                  <AccordionTrigger className="hover:no-underline py-5 group">
+                <AccordionItem
+                  value="cctv"
+                  id="section-cctv"
+                  className="border-b-gray-100"
+                >
+                  <AccordionTrigger className="hover:no-underline py-3.5 group">
                     <div className="flex items-center gap-3 text-gray-900 transition-transform group-active:scale-95">
                       <div className="p-2.5 bg-green-50 rounded-xl">
                         <Shield className="w-5 h-5 text-green-600" />
@@ -225,8 +263,12 @@ export default function Home() {
                   </AccordionContent>
                 </AccordionItem>
 
-                <AccordionItem value="transit" className="border-none">
-                  <AccordionTrigger className="hover:no-underline py-5 group">
+                <AccordionItem
+                  value="transit"
+                  id="section-transit"
+                  className="border-none"
+                >
+                  <AccordionTrigger className="hover:no-underline py-3.5 group">
                     <div className="flex items-center gap-3 text-gray-900 transition-transform group-active:scale-95">
                       <div className="p-2.5 bg-orange-50 rounded-xl">
                         <Bus className="w-5 h-5 text-orange-500" />
@@ -241,11 +283,6 @@ export default function Home() {
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>
-
-              {/* snap이 최대가 아닐 때 하단 여백 보정 */}
-              {snap !== 0.9 && (
-                <div className="pb-[var(--snap-point-height,0px)]" />
-              )}
             </div>
           </DrawerContent>
         </Drawer>
