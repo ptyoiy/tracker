@@ -23,12 +23,7 @@ import { RouteListPanel } from "@/features/route-analysis/ui/RouteAnalysisPanel"
 import { TransitLookupTab } from "@/features/transit-lookup/ui/TransitLookupTab";
 import { KakaoLoader } from "@/shared/lib/KakaoLoader";
 import { cn } from "@/shared/lib/utils";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/shared/ui/accordion";
+import { Accordion } from "@/shared/ui/accordion";
 import { Badge } from "@/shared/ui/badge";
 import {
   Drawer,
@@ -36,6 +31,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/shared/ui/drawer";
+import { SectionItem } from "@/shared/ui/section-item";
 import {
   type ActiveSection,
   activeSectionAtom,
@@ -43,6 +39,7 @@ import {
   bottomSheetSnapAtom,
 } from "@/store/atoms";
 
+const snapPoints = ["84px", 0.5, 0.9];
 export default function Home() {
   const [isOpen, setIsOpen] = useAtom(bottomSheetOpenAtom);
   const [snap, setSnap] = useAtom(bottomSheetSnapAtom);
@@ -67,8 +64,6 @@ export default function Home() {
   const lastObs =
     observations.length > 0 ? observations[observations.length - 1] : null;
   const bestRoute = selectedRoutes.length > 0 ? selectedRoutes[0] : null;
-
-  const snapPoints = ["84px", 0.5, 0.9];
 
   const toggleSnap = () => {
     if (snap === "84px") setSnap(0.5);
@@ -104,9 +99,6 @@ export default function Home() {
             <DrawerHeader className="sr-only">
               <DrawerTitle>분석 및 제어 센터</DrawerTitle>
             </DrawerHeader>
-
-            {/* Drawer Handle Visualizer */}
-            {/* <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1.5 bg-gray-300 rounded-full z-30" /> */}
 
             {/* Summary Context Bar - Proper Button Implementation */}
             <button
@@ -183,105 +175,51 @@ export default function Home() {
                 }}
                 className="w-full"
               >
-                <AccordionItem
+                <SectionItem
                   value="observation"
-                  id="section-observation"
-                  className="border-b-gray-100"
+                  title="관측 지점 입력"
+                  icon={<MapPin className="w-5 h-5 text-red-500" />}
+                  iconBgClass="bg-red-50"
                 >
-                  <AccordionTrigger className="hover:no-underline py-3.5 group">
-                    <div className="flex items-center gap-3 text-gray-900 transition-transform group-active:scale-95">
-                      <div className="p-2.5 bg-red-50 rounded-xl">
-                        <MapPin className="w-5 h-5 text-red-500" />
-                      </div>
-                      <span className="font-bold text-[17px]">
-                        관측 지점 입력
-                      </span>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <ObservationForm />
-                  </AccordionContent>
-                </AccordionItem>
+                  <ObservationForm />
+                </SectionItem>
 
-                <AccordionItem
+                <SectionItem
                   value="route"
-                  id="section-route"
-                  className="border-b-gray-100"
+                  title="경로 분석 결과"
+                  icon={<Navigation className="w-5 h-5 text-blue-500" />}
+                  iconBgClass="bg-blue-50"
                 >
-                  <AccordionTrigger className="hover:no-underline py-3.5 group">
-                    <div className="flex items-center gap-3 text-gray-900 transition-transform group-active:scale-95">
-                      <div className="p-2.5 bg-blue-50 rounded-xl">
-                        <Navigation className="w-5 h-5 text-blue-500" />
-                      </div>
-                      <span className="font-bold text-[17px]">
-                        경로 분석 결과
-                      </span>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <RouteListPanel />
-                  </AccordionContent>
-                </AccordionItem>
+                  <RouteListPanel />
+                </SectionItem>
 
-                <AccordionItem
+                <SectionItem
                   value="isochrone"
-                  id="section-isochrone"
-                  className="border-b-gray-100"
+                  title="이동 범위 (Isochrone)"
+                  icon={<Info className="w-5 h-5 text-purple-500" />}
+                  iconBgClass="bg-purple-50"
                 >
-                  <AccordionTrigger className="hover:no-underline py-3.5 group">
-                    <div className="flex items-center gap-3 text-gray-900 transition-transform group-active:scale-95">
-                      <div className="p-2.5 bg-purple-50 rounded-xl">
-                        <Info className="w-5 h-5 text-purple-500" />
-                      </div>
-                      <span className="font-bold text-[17px]">
-                        이동 범위 (Isochrone)
-                      </span>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <IsochroneControls />
-                  </AccordionContent>
-                </AccordionItem>
+                  <IsochroneControls />
+                </SectionItem>
 
-                <AccordionItem
+                <SectionItem
                   value="cctv"
-                  id="section-cctv"
-                  className="border-b-gray-100"
+                  title="주변 CCTV 검색"
+                  icon={<Shield className="w-5 h-5 text-green-600" />}
+                  iconBgClass="bg-green-50"
                 >
-                  <AccordionTrigger className="hover:no-underline py-3.5 group">
-                    <div className="flex items-center gap-3 text-gray-900 transition-transform group-active:scale-95">
-                      <div className="p-2.5 bg-green-50 rounded-xl">
-                        <Shield className="w-5 h-5 text-green-600" />
-                      </div>
-                      <span className="font-bold text-[17px]">
-                        주변 CCTV 검색
-                      </span>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <CCTVSearchTab />
-                  </AccordionContent>
-                </AccordionItem>
+                  <CCTVSearchTab />
+                </SectionItem>
 
-                <AccordionItem
+                <SectionItem
                   value="transit"
-                  id="section-transit"
-                  className="border-none"
+                  title="대중교통 직접 조회"
+                  icon={<Bus className="w-5 h-5 text-orange-500" />}
+                  iconBgClass="bg-orange-50"
+                  isLast
                 >
-                  <AccordionTrigger className="hover:no-underline py-3.5 group">
-                    <div className="flex items-center gap-3 text-gray-900 transition-transform group-active:scale-95">
-                      <div className="p-2.5 bg-orange-50 rounded-xl">
-                        <Bus className="w-5 h-5 text-orange-500" />
-                      </div>
-                      <span className="font-bold text-[17px]">
-                        대중교통 직접 조회
-                      </span>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <TransitLookupTab />
-                  </AccordionContent>
-                </AccordionItem>
+                  <TransitLookupTab />
+                </SectionItem>
               </Accordion>
             </div>
           </DrawerContent>
