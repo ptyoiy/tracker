@@ -65,7 +65,7 @@ function DrawerContent({
         {...props}
       >
         <div
-          className="mx-auto mt-2 mb-1 h-1.5 w-12 shrink-0 rounded-full bg-gray-300"
+          className="mx-auto mt-2 mb-1 h-1.5 w-12 shrink-0 rounded-full bg-gray-300 transition-all duration-200 hover:bg-gray-400 hover:scale-x-110 active:scale-x-125 active:bg-gray-500 cursor-grab active:cursor-grabbing"
           aria-hidden="true"
         />
         {children}

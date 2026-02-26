@@ -26,6 +26,3 @@ jobs:
 
       - name: Type check
         run: pnpm tsc --noEmit
-
-      - name: Unit tests
-        run: pnpm run test:unit

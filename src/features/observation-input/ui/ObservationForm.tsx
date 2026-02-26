@@ -3,13 +3,16 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAtom, useSetAtom } from "jotai";
+import { Plus } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { useIsochrone } from "@/features/map-view/lib/useIsochrone";
 import { useAnalyze } from "@/features/route-analysis/lib/useAnalyze";
+import { Accordion } from "@/shared/ui/accordion";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { Input } from "@/shared/ui/input";
+import { activeSectionAtom, bottomSheetSnapAtom } from "@/store/atoms";
 import {
   futureMinutesAtom,
   observationFormAtom,
@@ -35,6 +38,8 @@ export function ObservationForm() {
   const [observationsAtomValue, setObservations] = useAtom(observationsAtom);
   const [currentFutureMinutes, setFutureMinutes] = useAtom(futureMinutesAtom);
   const setObservationForm = useSetAtom(observationFormAtom);
+  const setActiveSection = useSetAtom(activeSectionAtom);
+  const setSnap = useSetAtom(bottomSheetSnapAtom);
   const { analyze } = useAnalyze();
   const { computeIsochrone } = useIsochrone();
 
@@ -93,7 +98,7 @@ export function ObservationForm() {
 
   // 2) Form -> Atom: 폼에서 직접 수정이 발생한 경우에만 Atom 업데이트
   useEffect(() => {
-    const subscription = form.watch((values, { name }) => {
+    const subscription = form.watch((values) => {
       // 폼 내부 업데이트(replace 등) 중이거나 필요한 값이 없으면 무시
       if (isInternalUpdate.current || !values.observations) return;
 
@@ -154,6 +159,10 @@ export function ObservationForm() {
     setObservationForm(normalized);
     void analyze();
     void computeIsochrone("walking");
+
+    // 경로 분석 결과 탭 자동 활성화 및 Drawer 상태 변경
+    setActiveSection("route");
+    setSnap(0.5);
   };
 
   // 관측 추가 버튼 (폼만 건드림, atom은 submit 시 동기화)
@@ -178,55 +187,73 @@ export function ObservationForm() {
   };
 
   return (
-    <Card className="p-4 space-y-4">
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <h2 className="text-lg font-semibold">관측 지점 입력</h2>
+    <Card className="p-5 space-y-6 shadow-none border-none bg-gray-50/50">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="space-y-3">
-          {fields.map((field, index) => (
-            <ObservationFormFields
-              key={field.id}
-              index={index}
-              form={form}
-              onRemove={() => handleRemove(index)}
-            />
-          ))}
+          <Accordion type="single" collapsible className="w-full">
+            {fields.map((field, index) => (
+              <ObservationFormFields
+                key={field.id}
+                index={index}
+                form={form}
+                onRemove={() => handleRemove(index)}
+              />
+            ))}
+          </Accordion>
+
           <Button
             type="button"
             variant="outline"
-            size="sm"
+            className="w-full h-12 border-dashed border-2 text-gray-500 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 transition-all rounded-xl gap-2"
             disabled={fields.length >= 15}
             onClick={handleAppend}
           >
+            <Plus className="w-4 h-4" />
             관측 지점 추가
           </Button>
         </div>
 
-        <div className="space-y-1">
-          <label htmlFor="futureMinutes" className="text-sm font-medium">
-            추정 대상 시간(+분)
+        <div className="space-y-2 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+          <label
+            htmlFor="futureMinutes"
+            className="text-sm font-bold text-gray-700"
+          >
+            추정 대상 시간 (+분)
           </label>
-          <Input
-            id="futureMinutes"
-            type="number"
-            min={1}
-            max={60}
-            {...form.register("futureMinutes", { valueAsNumber: true })}
-          />
+          <div className="flex gap-3 items-center">
+            <Input
+              id="futureMinutes"
+              type="number"
+              min={1}
+              max={60}
+              className="h-11 rounded-lg"
+              {...form.register("futureMinutes", { valueAsNumber: true })}
+            />
+            <span className="text-sm font-medium text-gray-500 shrink-0">
+              분 후
+            </span>
+          </div>
           {form.formState.errors.futureMinutes && (
-            <p className="text-xs text-red-500">
+            <p className="text-xs text-red-500 font-medium">
               {form.formState.errors.futureMinutes.message}
             </p>
           )}
         </div>
 
-        <Button type="submit" className="w-full" disabled={!canSubmit}>
-          분석 시작
-        </Button>
-        {!canSubmit && (
-          <p className="text-xs text-gray-500">
-            분석을 시작하려면 관측 지점을 최소 2개 등록해야 합니다.
-          </p>
-        )}
+        <div className="pt-2">
+          <Button
+            type="submit"
+            className="w-full h-14 text-[16px] font-bold rounded-xl shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-transform"
+            disabled={!canSubmit}
+          >
+            경로 분석 시작
+          </Button>
+          {!canSubmit && (
+            <p className="text-center text-[12px] text-gray-400 mt-3 font-medium">
+              분석을 시작하려면 최소 2개의 관측 지점이 필요합니다.
+            </p>
+          )}
+        </div>
       </form>
     </Card>
   );

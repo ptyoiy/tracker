@@ -292,3 +292,5 @@ To automatically format the code according to Biome's configured style:
 *   **Storybook:** UI components are developed and documented using Storybook.
 *   **Next.js Features:** Utilizes Next.js features like the `app` directory, API routes, and server-side rendering capabilities. React Compiler is enabled for performance optimizations.
 *   **Dependencies:** A rich set of dependencies indicates a focus on mapping, geospatial analysis, and user input handling.
+
+Always use korean.

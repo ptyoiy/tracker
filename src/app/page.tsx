@@ -10,6 +10,8 @@ import {
   Navigation,
   Shield,
 } from "lucide-react";
+import { useLoadCctvOnce } from "@/features/cctv-mapping/lib/cctv-api";
+import { useComputeRouteCctvCount } from "@/features/cctv-mapping/lib/route-cctv-count";
 import { CCTVSearchTab } from "@/features/cctv-mapping/ui/CCTVSearchTab";
 import { IsochroneControls } from "@/features/map-view/ui/IsochroneControls";
 import { MapView } from "@/features/map-view/ui/MapView";
@@ -27,7 +29,12 @@ import {
   AccordionTrigger,
 } from "@/shared/ui/accordion";
 import { Badge } from "@/shared/ui/badge";
-import { Drawer, DrawerContent } from "@/shared/ui/drawer";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/shared/ui/drawer";
 import {
   type ActiveSection,
   activeSectionAtom,
@@ -55,6 +62,9 @@ export default function Home() {
     else setSnap("84px");
   };
 
+  useLoadCctvOnce();
+  useComputeRouteCctvCount();
+
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden relative bg-white">
       <KakaoLoader />
@@ -76,14 +86,21 @@ export default function Home() {
           dismissible={false}
           fadeFromIndex={2}
         >
-          <DrawerContent className="z-50 shadow-[0_-8px_30px_rgb(0,0,0,0.12)] select-none flex flex-col outline-none border-t border-gray-200">
+          <DrawerContent className="z-50 shadow-[0_-8px_30px_rgb(0,0,0,0.12)] select-none flex flex-col outline-none border-t border-gray-200 h-full overflow-hidden">
+            <DrawerHeader className="sr-only">
+              <DrawerTitle>분석 및 제어 센터</DrawerTitle>
+            </DrawerHeader>
+
+            {/* Drawer Handle Visualizer */}
+            {/* <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1.5 bg-gray-300 rounded-full z-30" /> */}
+
             {/* Summary Context Bar - Proper Button Implementation */}
             <button
               type="button"
               aria-label={`제어판 높이 조절 (현재: ${snap === "84px" ? "최소" : snap === 0.5 ? "중간" : "최대"})`}
               className={cn(
-                "w-full px-4 py-3 border-b flex items-center justify-between transition-colors sticky top-0 z-20 shrink-0",
-                "bg-white/95 backdrop-blur-md hover:bg-gray-50 active:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
+                "w-full h-[84px] px-4 pt-4 pb-3 border-b flex items-center justify-between transition-all sticky top-0 z-20 shrink-0",
+                "bg-white/95 backdrop-blur-md hover:bg-gray-50 active:bg-gray-100 active:scale-[0.98] touch-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
               )}
               onClick={toggleSnap}
             >
@@ -128,7 +145,7 @@ export default function Home() {
             </button>
 
             {/* Content Area */}
-            <div className="flex-1 overflow-y-auto px-4 pb-8 bg-white">
+            <div className="flex-1 overflow-y-auto px-4 pb-12 bg-white">
               <Accordion
                 type="single"
                 collapsible

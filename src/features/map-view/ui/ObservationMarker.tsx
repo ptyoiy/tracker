@@ -53,7 +53,7 @@ export function ObservationMarker({ index, onCenterChange }: Props) {
     }
   };
 
-  const handleUpdate = (field: keyof typeof obs, value: any) => {
+  const handleUpdate = (field: keyof typeof obs, value: string) => {
     setObservations((prev) =>
       prev.map((o, i) => (i === index ? { ...o, [field]: value } : o)),
     );
@@ -165,7 +165,10 @@ export function ObservationMarker({ index, onCenterChange }: Props) {
                       type="number"
                       value={obs.lat}
                       onChange={(e) =>
-                        handleUpdate("lat", parseFloat(e.target.value))
+                        handleUpdate(
+                          "lat",
+                          parseFloat(e.target.value).toString(),
+                        )
                       }
                       className="h-8 text-xs"
                     />
@@ -178,7 +181,10 @@ export function ObservationMarker({ index, onCenterChange }: Props) {
                       type="number"
                       value={obs.lng}
                       onChange={(e) =>
-                        handleUpdate("lng", parseFloat(e.target.value))
+                        handleUpdate(
+                          "lng",
+                          parseFloat(e.target.value).toString(),
+                        )
                       }
                       className="h-8 text-xs"
                     />

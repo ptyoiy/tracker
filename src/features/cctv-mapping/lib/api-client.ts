@@ -8,7 +8,7 @@ export class CctvApiClient {
 
   async fetchPage(orgCode: string, pageNo: number, numOfRows: number = 100) {
     const upstreamParams = new URLSearchParams({
-      serviceKey: this.apiKey!,
+      serviceKey: this.apiKey,
       pageNo: String(pageNo),
       numOfRows: String(numOfRows),
       returnType: "json",
@@ -34,7 +34,7 @@ export class CctvApiClient {
     const totalCount = Number(firstPage.body.totalCount);
     if (totalCount === 0) return { items: [], totalCount: 0 };
 
-    const normalizeItems = (items: any): RawCctvItem[] => {
+    const normalizeItems = (items: { item: RawCctvItem[] }): RawCctvItem[] => {
       if (!items?.item) return [];
       return Array.isArray(items.item) ? items.item : [items.item];
     };

@@ -6,7 +6,10 @@ import { env } from "@/shared/config/env";
 
 type KakaoAddressResponse = {
   documents: Array<{
-    road_address?: { address_name: string };
+    road_address?: {
+      address_name: string;
+      building_name?: string;
+    };
     address?: { address_name: string };
   }>;
 };
@@ -30,12 +33,15 @@ export async function GET(req: Request) {
       .json<KakaoAddressResponse>();
 
     const doc = res.documents[0];
+    const buildingName = doc?.road_address?.building_name;
     const address =
       doc?.road_address?.address_name ?? doc?.address?.address_name ?? null;
 
-    return NextResponse.json({ address });
-    // biome-ignore lint/correctness/noUnusedVariables: <useless>
-  } catch (e) {
-    return NextResponse.json({ address: null }, { status: 200 });
+    return NextResponse.json({ address, buildingName: buildingName || null });
+  } catch (_e) {
+    return NextResponse.json(
+      { address: null, buildingName: null },
+      { status: 200 },
+    );
   }
 }

@@ -22,6 +22,38 @@ export function useLoadCctvOnce() {
   const setLoading = useSetAtom(cctvLoadingAtom);
   const viewport = useAtomValue(viewportAtom);
 
+  // 1) 초기 4개 구역(강남, 강동, 서초, 송파) 선행 로딩
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <최초 1회만 실행>
+  useEffect(() => {
+    const preSyncCodes = ["3220000", "3240000", "3210000", "3230000"];
+    const wideBounds = {
+      sw: { lat: 33, lng: 124 },
+      ne: { lat: 39, lng: 132 },
+    };
+
+    const loadInitial = async () => {
+      setLoading(true);
+      try {
+        await Promise.all(
+          preSyncCodes.map(async (orgCode) => {
+            if (loadedOrgCodes.has(orgCode)) return;
+
+            await syncRegionCctv(orgCode);
+            const data = await fetchCctvInBounds(wideBounds, orgCode);
+            appendData({ orgCode, data });
+          }),
+        );
+      } catch (e) {
+        console.error("Initial CCTV parallel load failed", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadInitial();
+  }, []);
+
+  // 2) 뷰포트 변화에 따른 CCTV 로드 (기존 로직)
   useEffect(() => {
     let cancelled = false;
     let timerId: NodeJS.Timeout;
@@ -41,7 +73,9 @@ export function useLoadCctvOnce() {
           ? await findOpenAtmyCodeByAddress(address)
           : null;
 
-        if (!orgCode || loadedOrgCodes.has(orgCode)) return;
+        // '6'으로 시작하는 코드(광역 지자체 전체 코드 등)나 이미 로드된 경우 스킵
+        if (!orgCode || orgCode.startsWith("6") || loadedOrgCodes.has(orgCode))
+          return;
 
         // 🟡 로딩 시작
         setLoading(true);

@@ -1,12 +1,18 @@
-// src/features/route-analysis/ui/RouteListPanel.tsx
+// src/features/route-analysis/ui/RouteAnalysisPanel.tsx
 "use client";
 
 import { useAtomValue } from "jotai";
+import { ArrowRight, Navigation } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/shared/ui/accordion";
 import {
   analyzeErrorAtom,
   analyzeLoadingAtom,
   segmentAnalysesAtom,
-  selectedRouteInfosAtom,
 } from "../model/atoms";
 import { RouteCard } from "./RouteCard";
 
@@ -14,52 +20,100 @@ export function RouteListPanel() {
   const segments = useAtomValue(segmentAnalysesAtom);
   const loading = useAtomValue(analyzeLoadingAtom);
   const error = useAtomValue(analyzeErrorAtom);
-  const _selectedRoutes = useAtomValue(selectedRouteInfosAtom);
 
   if (loading) {
-    return <div className="text-sm text-gray-600">경로 분석 중…</div>;
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-gray-400 gap-3">
+        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm font-medium">
+          최적의 경로를 분석하고 있습니다...
+        </p>
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="text-sm text-red-500">{error}</div>;
+    return (
+      <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-sm text-red-600 font-medium">
+        {error}
+      </div>
+    );
   }
 
   if (!segments || segments.length === 0) {
     return (
-      <div className="text-sm text-gray-500">아직 분석된 경로가 없습니다.</div>
-    );
-  }
-
-  const allRoutes = segments.flatMap((s) => s.candidateRoutes ?? []);
-
-  if (!allRoutes.length) {
-    return (
-      <div className="text-sm text-gray-500">
-        분석 결과에서 사용 가능한 경로 후보가 없습니다.
+      <div className="flex flex-col items-center justify-center py-12 text-gray-400 text-center px-6">
+        <Navigation className="w-12 h-12 mb-3 opacity-20" />
+        <p className="text-[15px] font-bold text-gray-400">
+          분석된 경로가 없습니다.
+        </p>
+        <p className="text-xs mt-1">
+          관측 지점을 등록하고 분석을 시작해보세요.
+        </p>
       </div>
     );
   }
-
-  // 선택된 경로들의 총 거리와 소요 시간 계산
-  // const totalDistance = selectedRoutes.reduce((acc, r) => acc + r.totalDistanceKm, 0);
-  // const totalDurationSeconds = selectedRoutes.reduce((acc, r) => acc + r.totalDurationSeconds, 0);
-  // const totalDurationMinutes = Math.round(totalDurationSeconds / 60);
 
   return (
-    <div className="space-y-4">
-      {/* <div className="rounded-lg bg-blue-50 p-4 border border-blue-100">
-        <h3 className="text-sm font-bold text-blue-900 mb-1">선택된 경로 합계</h3>
-        <div className="flex gap-4 text-sm text-blue-700 font-medium">
-          <span>총 {totalDistance.toFixed(1)} km</span>
-          <span>총 {totalDurationMinutes}분</span>
-        </div>
-      </div> */}
+    <div className="pb-10">
+      <Accordion type="single" collapsible className="w-full space-y-3">
+        {segments.map((segment, idx) => {
+          const routes = segment.candidateRoutes ?? [];
 
-      <div className="space-y-2">
-        {allRoutes.map((route) => (
-          <RouteCard key={route.id} route={route} />
-        ))}
-      </div>
+          return (
+            <AccordionItem
+              key={segment.id}
+              value={segment.id}
+              className="border rounded-xl px-3 bg-white overflow-hidden shadow-sm transition-all hover:border-blue-100"
+            >
+              <AccordionTrigger className="hover:no-underline py-4">
+                <div className="flex items-center justify-between w-full pr-2">
+                  {/* Left: Segment Info */}
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span className="w-5 h-5 flex-shrink-0 flex items-center justify-center bg-gray-900 text-white text-[10px] font-black rounded-md">
+                        {idx + 1}
+                      </span>
+                      <ArrowRight className="w-3 h-3 text-gray-300" />
+                      <span className="w-5 h-5 flex-shrink-0 flex items-center justify-center bg-gray-900 text-white text-[10px] font-black rounded-md">
+                        {idx + 2}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 truncate text-[13px] font-bold text-gray-700 ml-1">
+                      <span className="truncate max-w-[80px]">
+                        {segment.from.label}
+                      </span>
+                      <span className="text-gray-300">→</span>
+                      <span className="truncate max-w-[80px]">
+                        {segment.to.label}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Right: Count Summary */}
+                  <div className="text-[11px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-md shrink-0 border border-blue-100 ml-2">
+                    {routes.length}개 옵션
+                  </div>
+                </div>
+              </AccordionTrigger>
+
+              <AccordionContent className="pt-0 pb-4">
+                <div className="grid gap-2.5 pt-2 border-t border-gray-50">
+                  {routes.length > 0 ? (
+                    routes.map((route) => (
+                      <RouteCard key={route.id} route={route} />
+                    ))
+                  ) : (
+                    <div className="p-4 border border-dashed rounded-xl text-center text-xs text-gray-400 bg-gray-50/50">
+                      해당 구간에서 검색된 경로가 없습니다.
+                    </div>
+                  )}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          );
+        })}
+      </Accordion>
     </div>
   );
 }

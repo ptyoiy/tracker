@@ -127,5 +127,6 @@
 
 /* vaul drawer ::after 컨텐츠 가림 버그 수정 */
 [data-vaul-drawer][data-vaul-drawer-direction="bottom"]::after {
+  /* biome-ignore lint/complexity/noImportantStyles: <단일 DOM에 대한 설정> */
   height: unset !important;
 }
