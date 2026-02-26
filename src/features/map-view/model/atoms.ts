@@ -7,6 +7,7 @@ export type IsochroneState = {
   minutes: number;
   polygons: number[][][][]; // [polygon][ring][vertex][lng/lat]
   fallbackUsed: boolean;
+  observationIndex: number;
 };
 
 export type ViewportBounds = {
@@ -27,6 +28,8 @@ export type MapLayerVisibility = {
 };
 
 export const isochroneAtom = atom<IsochroneState | null>(null);
+
+export const isochroneCacheAtom = atom<Record<string, IsochroneState>>({});
 
 export const viewportAtom = atom<ViewportBounds | null>(null);
 

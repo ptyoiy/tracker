@@ -7,7 +7,11 @@ import {
   futureMinutesAtom,
   observationsAtom,
 } from "@/features/observation-input/model/atoms";
-import { type IsochroneProfile, isochroneAtom } from "../model/atoms";
+import {
+  type IsochroneProfile,
+  isochroneAtom,
+  isochroneCacheAtom,
+} from "../model/atoms";
 
 type IsochroneApiResponse = {
   polygons: { coordinates: number[][][] }[];
@@ -17,18 +21,34 @@ type IsochroneApiResponse = {
 
 export function useIsochrone() {
   const [isochrone, setIsochrone] = useAtom(isochroneAtom);
+  const [cache, setCache] = useAtom(isochroneCacheAtom);
   const observations = useAtomValue(observationsAtom);
   const futureMinutes = useAtomValue(futureMinutesAtom);
 
   const computeIsochrone = useCallback(
-    async (profile: IsochroneProfile) => {
+    async (profile: IsochroneProfile, index?: number) => {
       if (observations.length === 0) return;
 
-      const last = observations[observations.length - 1];
+      const targetIndex =
+        index ?? isochrone?.observationIndex ?? observations.length - 1;
+      const target = observations[targetIndex];
+
+      if (!target) return;
+
+      // 캐시 키 생성 (좌표는 소수점 6자리까지 제한하여 미세한 차이로 인한 캐시 미스 방지)
+      const cacheKey = `${target.lat.toFixed(6)},${target.lng.toFixed(6)},${futureMinutes},${profile}`;
+
+      if (cache[cacheKey]) {
+        setIsochrone({
+          ...cache[cacheKey],
+          observationIndex: targetIndex,
+        });
+        return;
+      }
 
       const body = {
-        lat: last.lat,
-        lng: last.lng,
+        lat: target.lat,
+        lng: target.lng,
         minutes: futureMinutes,
         profile,
       };
@@ -41,25 +61,26 @@ export function useIsochrone() {
 
       const data = (await res.json()) as IsochroneApiResponse;
 
-      if (!res.ok) {
-        // 실패 시 상태만 초기화
-        setIsochrone({
-          profile,
-          minutes: futureMinutes,
-          polygons: [],
-          fallbackUsed: true,
-        });
-        return;
-      }
-
-      setIsochrone({
+      const newState = {
         profile,
         minutes: futureMinutes,
-        polygons: data.polygons.map((p) => p.coordinates),
-        fallbackUsed: data.fallbackUsed,
-      });
+        polygons: res.ok ? data.polygons.map((p) => p.coordinates) : [],
+        fallbackUsed: !res.ok || data.fallbackUsed,
+        observationIndex: targetIndex,
+      };
+
+      // 성공/실패 여부와 관계없이 결과를 캐시에 저장 (반복적인 실패 요청 방지)
+      setCache((prev) => ({ ...prev, [cacheKey]: newState }));
+      setIsochrone(newState);
     },
-    [observations, futureMinutes, setIsochrone],
+    [
+      observations,
+      futureMinutes,
+      setIsochrone,
+      isochrone?.observationIndex,
+      cache,
+      setCache,
+    ],
   );
 
   return { isochrone, computeIsochrone };

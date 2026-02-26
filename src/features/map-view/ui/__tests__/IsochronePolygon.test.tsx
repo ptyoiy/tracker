@@ -36,6 +36,7 @@ describe("IsochronePolygon", () => {
         ],
       ],
       fallbackUsed: false,
+      observationIndex: 0,
     });
 
     render(

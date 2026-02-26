@@ -195,7 +195,7 @@ export default function Home() {
 
                 <SectionItem
                   value="isochrone"
-                  title="이동 범위 (Isochrone)"
+                  title="이동 범위"
                   icon={<Info className="w-5 h-5 text-purple-500" />}
                   iconBgClass="bg-purple-50"
                 >
