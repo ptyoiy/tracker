@@ -98,22 +98,24 @@ export async function POST(request: NextRequest) {
 
       // 3. 대중교통 경로 처리
       if (transResult.status === "fulfilled" && transResult.value) {
-        const trans = transResult.value;
-        const duration = trans.durationSeconds;
-        const isReasonable =
-          Math.abs(duration - basic.duration) / basic.duration <= 0.3;
-        candidateRoutes.push({
-          id: `${segmentId}-transit`,
-          totalDistanceKm: trans.distanceMeters / 1000,
-          totalDurationSeconds: duration,
-          primaryMode: "transit",
-          isReasonable,
-          legs: trans.legs.map((leg) => ({
-            mode: leg.mode as TmapTransitLegMode, // BUS, SUBWAY, WALK 등
-            distanceKm: leg.distanceMeters / 1000,
-            durationSeconds: leg.durationSeconds,
-            polyline: leg.polyline,
-          })),
+        transResult.value.forEach((trans, index) => {
+          const duration = trans.durationSeconds;
+          const isReasonable =
+            Math.abs(duration - basic.duration) / basic.duration <= 0.3;
+          candidateRoutes.push({
+            id: `${segmentId}-transit-${index}`,
+            totalDistanceKm: trans.distanceMeters / 1000,
+            totalDurationSeconds: duration,
+            primaryMode: "transit",
+            isReasonable,
+            legs: trans.legs.map((leg) => ({
+              mode: leg.mode as TmapTransitLegMode, // BUS, SUBWAY, WALK 등
+              distanceKm: leg.distanceMeters / 1000,
+              durationSeconds: leg.durationSeconds,
+              polyline: leg.polyline,
+              route: leg.route,
+            })),
+          });
         });
       }
 
@@ -140,6 +142,7 @@ export async function POST(request: NextRequest) {
         averageSpeedKmh: basic.avgSpeed,
         inferredMode: basic.transportMode as TransportMode,
         candidateRoutes,
+        transits: transResult.status === "fulfilled" ? transResult.value : [],
       });
     }
 

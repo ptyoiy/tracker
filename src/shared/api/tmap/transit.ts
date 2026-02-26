@@ -10,6 +10,7 @@ export type TmapTransitLeg = {
   distanceMeters: number;
   durationSeconds: number;
   polyline: TmapLatLng[];
+  route?: string; // 버스 번호, 지하철 노선 등
 };
 
 export type TmapTransitRoute = {
@@ -22,6 +23,7 @@ type RawTransitLeg = {
   mode: string; // "WALK" | "BUS" | "SUBWAY" | ...
   distance?: number;
   sectionTime?: number;
+  route?: string; // 버스 번호, 지하철 노선 등
   // 도보 구간의 좌표
   steps?: {
     linestring?: string; // "lon,lat lon,lat ..."
@@ -76,7 +78,7 @@ export async function getTransitRoute(
   from: TmapLatLng,
   to: TmapLatLng,
   searchDttm?: string, // YYYYMMDDHHMM
-): Promise<TmapTransitRoute | null> {
+): Promise<TmapTransitRoute[]> {
   const body = {
     startX: from.lng,
     startY: from.lat,
@@ -103,57 +105,62 @@ export async function getTransitRoute(
 
     const itineraries = res.metaData?.plan?.itineraries;
     console.dir(itineraries, { depth: 3 });
-    if (!itineraries || itineraries.length === 0) return null;
-    // 일단 첫 번째(추천) 경로만 사용
-    const first = itineraries[0];
-    const rawLegs = first.legs ?? [];
-    if (rawLegs.length === 0) return null;
+    if (!itineraries || itineraries.length === 0) return [];
 
-    const legs: TmapTransitLeg[] = [];
-
-    // 총 거리/시간은 응답에 있으면 그대로 쓰고, 없으면 legs 합산
-    let totalDistance = first.totalDistance ?? 0;
-    let totalTime = first.totalTime ?? 0;
-
-    if (!totalDistance || !totalTime) {
-      totalDistance = 0;
-      totalTime = 0;
-      rawLegs.forEach((leg) => {
-        totalDistance += leg.distance ?? 0;
-        totalTime += leg.sectionTime ?? 0;
-      });
-    }
-
-    for (const leg of rawLegs) {
-      const mode = toLegMode(leg.mode);
-      const distanceMeters = leg.distance ?? 0;
-      const durationSeconds = leg.sectionTime ?? 0;
-
-      let polyline: TmapLatLng[] = [];
-
-      if (mode === "WALK" && leg.steps && leg.steps.length > 0) {
-        // 도보는 steps[].linestring을 이어붙인다.
-        polyline = leg.steps.flatMap((s) => parseLinestring(s.linestring));
-      } else {
-        // 버스/지하철 등은 passShape.linestring 사용
-        polyline = parseLinestring(leg.passShape?.linestring);
+    return itineraries.map((itinerary) => {
+      const rawLegs = itinerary.legs ?? [];
+      if (rawLegs.length === 0) {
+        return {
+          distanceMeters: 0,
+          durationSeconds: 0,
+          legs: [],
+        };
       }
 
-      legs.push({
-        mode,
-        distanceMeters,
-        durationSeconds,
-        polyline,
-      });
-    }
+      const legs: TmapTransitLeg[] = [];
 
-    return {
-      distanceMeters: totalDistance,
-      durationSeconds: totalTime,
-      legs,
-    };
+      let totalDistance = itinerary.totalDistance ?? 0;
+      let totalTime = itinerary.totalTime ?? 0;
+
+      if (!totalDistance || !totalTime) {
+        totalDistance = 0;
+        totalTime = 0;
+        rawLegs.forEach((leg) => {
+          totalDistance += leg.distance ?? 0;
+          totalTime += leg.sectionTime ?? 0;
+        });
+      }
+
+      for (const leg of rawLegs) {
+        const mode = toLegMode(leg.mode);
+        const distanceMeters = leg.distance ?? 0;
+        const durationSeconds = leg.sectionTime ?? 0;
+
+        let polyline: TmapLatLng[] = [];
+
+        if (mode === "WALK" && leg.steps && leg.steps.length > 0) {
+          polyline = leg.steps.flatMap((s) => parseLinestring(s.linestring));
+        } else {
+          polyline = parseLinestring(leg.passShape?.linestring);
+        }
+
+        legs.push({
+          mode,
+          distanceMeters,
+          durationSeconds,
+          polyline,
+          route: leg.route,
+        });
+      }
+
+      return {
+        distanceMeters: totalDistance,
+        durationSeconds: totalTime,
+        legs,
+      };
+    });
   } catch (err) {
     console.error("[TMAP transit] getTransitRoute error", err);
-    return null;
+    return [];
   }
 }

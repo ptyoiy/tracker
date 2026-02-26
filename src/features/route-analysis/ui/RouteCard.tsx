@@ -54,10 +54,17 @@ export function RouteCard({ route }: Props) {
   const distanceKm = Math.round(route.totalDistanceKm * 10) / 10;
   const durationMinutes = Math.round(route.totalDurationSeconds / 60);
 
-  const legModes =
+  const transitLegDetails =
     route.primaryMode === "transit"
-      ? Array.from(new Set(route.legs.map((l) => l.mode))).filter(
-          (m) => m !== "WALK",
+      ? Array.from(
+          new Map(
+            route.legs
+              .filter((l) => l.mode !== "WALK" && l.route)
+              .map((l) => [
+                `${l.mode}-${l.route}`,
+                { mode: l.mode, route: l.route },
+              ]),
+          ).values(),
         )
       : [];
 
@@ -121,21 +128,38 @@ export function RouteCard({ route }: Props) {
           </span>
         </div>
 
-        {legModes.length > 0 && (
+        {transitLegDetails.length > 0 && (
           <div className="flex flex-wrap gap-1">
-            {legModes.map((mode) => (
-              <Badge
-                key={mode}
-                variant="outline"
-                className={cn(
-                  "text-[9px] font-bold px-1.5 py-0 h-4",
-                  isStale
-                    ? "bg-gray-100 border-gray-200 text-gray-400"
-                    : "bg-white border-gray-200 text-gray-500",
-                )}
+            {transitLegDetails.map((detail) => (
+              <div
+                key={`${detail.mode}-${detail.route}`}
+                className="flex gap-1"
               >
-                {mode}
-              </Badge>
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "text-[9px] font-bold px-1.5 py-0 h-4",
+                    isStale
+                      ? "bg-gray-100 border-gray-200 text-gray-400"
+                      : "bg-white border-gray-200 text-gray-500",
+                  )}
+                >
+                  {detail.mode}
+                </Badge>
+                {detail.route && (
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "text-[9px] font-bold px-1.5 py-0 h-4",
+                      isStale
+                        ? "bg-gray-100 border-gray-200 text-gray-400"
+                        : "bg-white border-gray-200 text-gray-500",
+                    )}
+                  >
+                    {detail.route}
+                  </Badge>
+                )}
+              </div>
             ))}
           </div>
         )}

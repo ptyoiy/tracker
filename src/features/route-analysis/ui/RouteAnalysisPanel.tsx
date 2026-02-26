@@ -48,7 +48,7 @@ export function RouteListPanel() {
       durationSeconds: durationSeconds, // 현재 관측 지점 시간차로 업데이트
     };
   });
-
+  console.log({ enrichedSegments });
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-gray-400 gap-3">
