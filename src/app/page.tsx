@@ -151,8 +151,8 @@ export default function Home() {
                     <ChevronDown className="w-4 h-4 text-gray-400" />
                   ) : (
                     <div className="flex flex-col -space-y-2">
-                      <ChevronUp className="w-3 h-3 text-gray-300" />
-                      <ChevronDown className="w-3 h-3 text-gray-300" />
+                      <ChevronUp className="w-4 h-4 text-gray-300" />
+                      {/* <ChevronDown className="w-4 h-4 text-gray-300" /> */}
                     </div>
                   )}
                 </div>

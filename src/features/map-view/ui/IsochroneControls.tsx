@@ -2,6 +2,7 @@
 
 import { format } from "date-fns";
 import { useAtomValue } from "jotai";
+import { Info } from "lucide-react";
 import { observationsAtom } from "@/features/observation-input/model/atoms";
 import { Slider } from "@/shared/ui/slider";
 import { useIsochrone } from "../lib/useIsochrone";
@@ -46,7 +47,21 @@ export function IsochroneControls() {
     }
   };
 
-  if (observations.length === 0) return null;
+  if (observations.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-10 text-gray-400 text-center px-4 bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
+        <Info className="w-10 h-10 mb-3 opacity-20" />
+        <p className="text-[14px] font-bold text-gray-400">
+          표시할 수 있는 지점이 없습니다.
+        </p>
+        <p className="text-[11px] mt-1 leading-relaxed">
+          먼저 관측 지점을 1개 이상 등록해주세요.
+          <br />
+          선택한 지점으로부터의 이동 가능 범위를 분석합니다.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-2 p-2 bg-white/80 backdrop-blur-sm rounded-lg border shadow-sm w-full">
