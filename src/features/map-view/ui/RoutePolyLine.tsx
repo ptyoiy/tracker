@@ -1,11 +1,10 @@
-import { useAtomValue } from "jotai";
 import { Polyline } from "react-kakao-maps-sdk";
-import { selectedRouteInfosAtom } from "@/features/route-analysis/model/atoms";
+import { useSelectedRoutes } from "@/features/route-analysis/lib/useSelectedRoutes";
 
 const COLORS = ["#4A90E2", "#E24A4A", "#4AE290"];
 
 export function RoutePolyline() {
-  const routes = useAtomValue(selectedRouteInfosAtom);
+  const routes = useSelectedRoutes();
 
   if (!routes.length) return null;
 

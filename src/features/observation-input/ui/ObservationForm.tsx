@@ -7,10 +7,10 @@ import { Plus } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { useIsochrone } from "@/features/map-view/lib/useIsochrone";
-import { useAnalyze } from "@/features/route-analysis/lib/useAnalyze";
+import { useAnalyzeMutation } from "@/features/route-analysis/api/useAnalyzeMutation";
 import {
   analysisResultAtom,
-  analyzeLoadingAtom,
+  lastAnalysisParamsAtom,
 } from "@/features/route-analysis/model/atoms";
 import { Accordion } from "@/shared/ui/accordion";
 import { Button } from "@/shared/ui/button";
@@ -18,6 +18,7 @@ import { Card } from "@/shared/ui/card";
 import { Slider } from "@/shared/ui/slider";
 import { activeSectionAtom, bottomSheetSnapAtom } from "@/store/atoms";
 import {
+  committedFutureMinutesAtom,
   futureMinutesAtom,
   observationFormAtom,
   observationsAtom,
@@ -38,15 +39,29 @@ function toLocalDatetimeInput(iso?: string) {
   return new Date(d.getTime() - offset).toISOString().slice(0, 16);
 }
 
+import { useQuery } from "@tanstack/react-query";
+import { analyzeQueries } from "@/shared/api/queries";
+
 export function ObservationForm() {
   const [observationsAtomValue, setObservations] = useAtom(observationsAtom);
   const [currentFutureMinutes, setFutureMinutes] = useAtom(futureMinutesAtom);
+  const setCommittedMinutes = useSetAtom(committedFutureMinutesAtom);
   const analysisResult = useAtomValue(analysisResultAtom);
-  const isAnalyzing = useAtomValue(analyzeLoadingAtom);
+  const [lastParams, setLastParams] = useAtom(lastAnalysisParamsAtom);
+
+  const { data: analysisData } = useQuery(
+    analyzeQueries.segments(
+      lastParams?.observations,
+      lastParams?.futureMinutes,
+    ),
+  );
+
+  const hasSegments =
+    !!analysisData?.segments && analysisData.segments.length > 0;
+  const { mutateAsync: analyze, isPending: isAnalyzing } = useAnalyzeMutation();
   const setObservationForm = useSetAtom(observationFormAtom);
   const setActiveSection = useSetAtom(activeSectionAtom);
   const setSnap = useSetAtom(bottomSheetSnapAtom);
-  const { analyze } = useAnalyze();
   const { computeIsochrone } = useIsochrone();
 
   const isInternalUpdate = useRef(false);
@@ -163,7 +178,11 @@ export function ObservationForm() {
     };
 
     setObservationForm(normalized);
-    void analyze();
+    setLastParams({
+      observations: normalizedObservations,
+      futureMinutes: values.futureMinutes,
+    });
+    void analyze(normalized);
     void computeIsochrone("walking");
 
     // 경로 분석 결과 탭 자동 활성화 및 Drawer 상태 변경
@@ -193,7 +212,7 @@ export function ObservationForm() {
   };
 
   return (
-    <Card className="p-5 space-y-6 shadow-none border-none bg-gray-50/50">
+    <Card className="px-5 pb-5 pt-0 space-y-6 shadow-none border-none bg-gray-50/50">
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="space-y-3">
           <Accordion type="single" collapsible className="w-full">
@@ -225,7 +244,7 @@ export function ObservationForm() {
               htmlFor="futureMinutes"
               className="text-sm font-bold text-gray-700"
             >
-              추정 대상 시간
+              최대 이동 가능 범위 (분)
             </label>
             <span className="text-sm font-bold text-blue-600">
               {form.watch("futureMinutes")}분 후
@@ -240,6 +259,9 @@ export function ObservationForm() {
               onValueChange={(val) =>
                 form.setValue("futureMinutes", val[0] ?? 1)
               }
+              onValueCommit={(val) => {
+                if (val[0]) setCommittedMinutes(val[0]);
+              }}
             />
           </div>
           {form.formState.errors.futureMinutes && (
@@ -259,7 +281,7 @@ export function ObservationForm() {
               ? "분석 중..."
               : analysisResult.stale
                 ? "재분석하기"
-                : analysisResult.segments
+                : hasSegments
                   ? "다시 분석하기"
                   : "경로 분석 시작"}
           </Button>

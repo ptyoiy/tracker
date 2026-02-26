@@ -1,8 +1,10 @@
 // src/features/route-analysis/ui/RouteAnalysisPanel.tsx
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { useAtomValue } from "jotai";
 import { AlertCircle, ArrowRight, Navigation } from "lucide-react";
+import { analyzeQueries } from "@/shared/api/queries";
 import { cn } from "@/shared/lib/utils";
 import {
   Accordion,
@@ -10,19 +12,25 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/shared/ui/accordion";
-import {
-  analysisResultAtom,
-  analyzeErrorAtom,
-  analyzeLoadingAtom,
-} from "../model/atoms";
+import { analysisResultAtom, lastAnalysisParamsAtom } from "../model/atoms";
 import { RouteCard } from "./RouteCard";
 
 export function RouteListPanel() {
+  const lastParams = useAtomValue(lastAnalysisParamsAtom);
   const analysisResult = useAtomValue(analysisResultAtom);
-  const loading = useAtomValue(analyzeLoadingAtom);
-  const error = useAtomValue(analyzeErrorAtom);
 
-  const segments = analysisResult.segments;
+  const {
+    data,
+    isLoading: loading,
+    error,
+  } = useQuery(
+    analyzeQueries.segments(
+      lastParams?.observations,
+      lastParams?.futureMinutes,
+    ),
+  );
+
+  const segments = data?.segments;
   const isStale = analysisResult.stale;
 
   if (loading) {
@@ -39,7 +47,7 @@ export function RouteListPanel() {
   if (error) {
     return (
       <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-sm text-red-600 font-medium">
-        {error}
+        {error instanceof Error ? error.message : "경로 분석에 실패했습니다."}
       </div>
     );
   }
@@ -83,29 +91,44 @@ export function RouteListPanel() {
               <AccordionTrigger className="hover:no-underline py-4">
                 <div className="flex items-center justify-between w-full pr-2">
                   {/* Left: Segment Info */}
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <div className="flex items-center gap-1 shrink-0">
-                      <span className="w-5 h-5 flex-shrink-0 flex items-center justify-center bg-gray-900 text-white text-[10px] font-black rounded-md">
-                        {idx + 1}
-                      </span>
-                      <ArrowRight className="w-3 h-3 text-gray-300" />
-                      <span className="w-5 h-5 flex-shrink-0 flex items-center justify-center bg-gray-900 text-white text-[10px] font-black rounded-md">
-                        {idx + 2}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1 truncate text-[13px] font-bold text-gray-700 ml-1">
-                      <span className="truncate max-w-[80px]">
-                        {segment.from.label}
-                      </span>
-                      <span className="text-gray-300">→</span>
-                      <span className="truncate max-w-[80px]">
-                        {segment.to.label}
-                      </span>
-                      {isStale && (
-                        <span className="ml-2 px-1.5 py-0.5 bg-gray-200 text-gray-500 text-[9px] rounded font-black whitespace-nowrap">
-                          이전 결과
+                  <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 shrink-0">
+                        <span className="w-5 h-5 flex-shrink-0 flex items-center justify-center bg-gray-900 text-white text-[10px] font-black rounded-md">
+                          {idx + 1}
                         </span>
-                      )}
+                        <ArrowRight className="w-3 h-3 text-gray-300" />
+                        <span className="w-5 h-5 flex-shrink-0 flex items-center justify-center bg-gray-900 text-white text-[10px] font-black rounded-md">
+                          {idx + 2}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 truncate text-[13px] font-bold text-gray-700 ml-1">
+                        <span className="truncate max-w-[120px]">
+                          {segment.from.address ||
+                            segment.from.label ||
+                            `지점 ${idx + 1}`}
+                        </span>
+                        <span className="text-gray-300">→</span>
+                        <span className="truncate max-w-[120px]">
+                          {segment.to.address ||
+                            segment.to.label ||
+                            `지점 ${idx + 2}`}
+                        </span>
+                        {isStale && (
+                          <span className="ml-2 px-1.5 py-0.5 bg-gray-200 text-gray-500 text-[9px] rounded font-black whitespace-nowrap">
+                            이전 결과
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Actual Time Difference */}
+                    <div className="flex items-center gap-2 ml-1 text-[11px] text-gray-400 font-medium">
+                      <span className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 font-bold">
+                        관측 시차: {Math.round(segment.durationSeconds / 60)}분
+                      </span>
+                      <span>·</span>
+                      <span>직선 거리: {segment.distanceKm.toFixed(2)}km</span>
                     </div>
                   </div>
 

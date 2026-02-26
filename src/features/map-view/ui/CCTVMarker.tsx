@@ -8,10 +8,10 @@ import {
   MapMarker,
   useMap,
 } from "react-kakao-maps-sdk";
+import { useFilteredCctv } from "@/features/cctv-mapping/lib/useFilteredCctv";
 import {
   cctvSearchCenterAtom,
   cctvSearchRadiusAtom,
-  filteredCctvAtom,
   hoveredCctvIdAtom,
 } from "@/features/cctv-mapping/model/atoms";
 import { Badge } from "@/shared/ui/badge";
@@ -24,7 +24,7 @@ type Props = {
 };
 
 export function CCTVMarkers({ onCenterChange }: Props) {
-  const cctvs = useAtomValue(filteredCctvAtom);
+  const cctvs = useFilteredCctv();
   const searchCenter = useAtomValue(cctvSearchCenterAtom);
   const searchRadius = useAtomValue(cctvSearchRadiusAtom);
   const hoveredId = useAtomValue(hoveredCctvIdAtom);

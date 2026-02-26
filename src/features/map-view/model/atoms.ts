@@ -29,9 +29,17 @@ export type MapLayerVisibility = {
   observations: boolean;
 };
 
-export const isochroneAtom = atom<IsochroneState | null>(null);
+export type IsochroneSelection = {
+  profile: IsochroneProfile;
+  minutes: number;
+  observationIndex: number;
+};
 
-export const isochroneCacheAtom = atom<Record<string, IsochroneState>>({});
+export const isochroneSelectionAtom = atom<IsochroneSelection>({
+  profile: "walking",
+  minutes: 10,
+  observationIndex: 0,
+});
 
 export const viewportAtom = atom<ViewportBounds | null>(null);
 

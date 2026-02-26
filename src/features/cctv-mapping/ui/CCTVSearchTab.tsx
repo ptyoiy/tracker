@@ -1,28 +1,34 @@
 "use client";
 
-import { useAtomValue, useSetAtom } from "jotai";
+import { useQuery } from "@tanstack/react-query";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { Crosshair, MapPin, Search } from "lucide-react";
 import { viewportAtom } from "@/features/map-view/model/atoms";
 import { observationsAtom } from "@/features/observation-input/model/atoms";
+import { cctvQueries } from "@/shared/api/queries";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Slider } from "@/shared/ui/slider";
-import { useCctvSearch } from "../lib/useCctvSearch";
 import {
-  cctvLoadingAtom,
   cctvSearchCenterAtom,
-  filteredCctvAtom,
+  cctvSearchRadiusAtom,
   hoveredCctvIdAtom,
 } from "../model/atoms";
 
 export function CCTVSearchTab() {
-  const cctvs = useAtomValue(filteredCctvAtom);
-  const loading = useAtomValue(cctvLoadingAtom);
-  const searchCenter = useAtomValue(cctvSearchCenterAtom);
+  const [searchCenter, setSearchCenter] = useAtom(cctvSearchCenterAtom);
+  const [radius, setRadius] = useAtom(cctvSearchRadiusAtom);
   const setHoveredId = useSetAtom(hoveredCctvIdAtom);
   const observations = useAtomValue(observationsAtom);
   const viewport = useAtomValue(viewportAtom);
-  const { radius, setRadius, searchNearby, setSearchCenter } = useCctvSearch();
+
+  const { data: cctvs = [], isLoading: loading } = useQuery(
+    cctvQueries.nearby(searchCenter?.lat ?? 0, searchCenter?.lng ?? 0, radius),
+  );
+
+  const searchNearby = (lat: number, lng: number) => {
+    setSearchCenter({ lat, lng });
+  };
 
   const handleSearchAtCenter = () => {
     // 바텀 시트에 의해 가려진 영역을 제외한 비주얼 센터(시각적 중심) 기준 검색

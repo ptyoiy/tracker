@@ -18,10 +18,8 @@ import { IsochroneControls } from "@/features/map-view/ui/IsochroneControls";
 import { MapView } from "@/features/map-view/ui/MapView";
 import { observationsAtom } from "@/features/observation-input/model/atoms";
 import { ObservationForm } from "@/features/observation-input/ui/ObservationForm";
-import {
-  analysisResultAtom,
-  selectedRouteInfosAtom,
-} from "@/features/route-analysis/model/atoms";
+import { useSelectedRoutes } from "@/features/route-analysis/lib/useSelectedRoutes";
+import { analysisResultAtom } from "@/features/route-analysis/model/atoms";
 import { RouteListPanel } from "@/features/route-analysis/ui/RouteAnalysisPanel";
 import { TransitLookupTab } from "@/features/transit-lookup/ui/TransitLookupTab";
 import { KakaoLoader } from "@/shared/lib/KakaoLoader";
@@ -50,7 +48,7 @@ export default function Home() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const observations = useAtomValue(observationsAtom);
-  const selectedRoutes = useAtomValue(selectedRouteInfosAtom);
+  const selectedRoutes = useSelectedRoutes();
   const analysisResult = useAtomValue(analysisResultAtom);
 
   useEffect(() => {

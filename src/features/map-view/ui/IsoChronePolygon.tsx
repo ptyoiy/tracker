@@ -2,17 +2,37 @@
 
 import { useAtomValue } from "jotai";
 import { Polygon } from "react-kakao-maps-sdk";
-import { isochroneAtom } from "../model/atoms";
+import { useIsochroneQuery } from "@/features/isochrone/api/useIsochroneQuery";
+import {
+  committedFutureMinutesAtom,
+  observationsAtom,
+} from "@/features/observation-input/model/atoms";
+import { isochroneSelectionAtom } from "../model/atoms";
 
-// Mapbox/GeoJSON: [polygon][ring][vertex][lng,lat][web:145]
-function toPolygonPath(polygons: number[][][][]) {
-  return polygons.map((poly) => poly[0].map(([lng, lat]) => ({ lat, lng })));
+// Mapbox/GeoJSON: [polygon][ring][vertex][lng,lat]
+function toPolygonPath(polygons: { coordinates: number[][][] }[]) {
+  return polygons.map((poly) =>
+    poly.coordinates[0].map(([lng, lat]) => ({ lat, lng })),
+  );
 }
 
 export function IsochronePolygon() {
-  const isochrone = useAtomValue(isochroneAtom);
+  const selection = useAtomValue(isochroneSelectionAtom);
+  const observations = useAtomValue(observationsAtom);
+  const futureMinutes = useAtomValue(committedFutureMinutesAtom);
 
-  if (!isochrone || isochrone.polygons.length === 0) return null;
+  const { profile, observationIndex } = selection;
+  const target = observations[observationIndex];
+
+  const { data: isochrone } = useIsochroneQuery(
+    target?.lat ?? 0,
+    target?.lng ?? 0,
+    futureMinutes,
+    profile,
+  );
+
+  if (!isochrone || !isochrone.polygons || isochrone.polygons.length === 0)
+    return null;
 
   const paths = toPolygonPath(isochrone.polygons);
 

@@ -50,22 +50,26 @@ export function ObservationFormFields({ index, form, onRemove }: Props) {
           <div className="flex items-center justify-between w-full pr-2">
             {/* Left: Index & Time */}
             <div className="flex items-center gap-3 shrink-0">
-              <span className="shrink-0 flex items-center justify-center w-6 h-6 text-[11px] font-black bg-gray-900 text-white rounded-md">
+              <span className="shrink-0 flex items-center justify-center w-6 h-6 text-[10px] font-black bg-gray-900 text-white rounded-md">
                 {index + 1}
               </span>
-              <div className="flex items-center gap-1.5 text-gray-500">
-                <Clock className="w-3.5 h-3.5" />
-                <span className="text-[13px] font-bold tabular-nums">
+              <div className="flex flex-col items-start -space-y-0.5">
+                <span className="text-[13px] font-bold tabular-nums text-gray-700">
                   {formatTimeSummary(watchTimestamp)}
                 </span>
               </div>
             </div>
 
-            {/* Right: Label (Place) - Fixed to Right with Truncate */}
-            <div className="flex-1 text-right min-w-0 ml-4">
-              <span className="text-[15px] font-bold text-gray-800 truncate block">
+            {/* Right: Label (Place) & Address - Pushed to right */}
+            <div className="flex-1 flex flex-col items-end min-w-0 ml-4 text-right">
+              <span className="text-[14px] font-black text-gray-900 truncate w-full">
                 {watchLabel || "장소 미지정"}
               </span>
+              {form.watch(`observations.${index}.address`) && (
+                <span className="text-[11px] text-gray-400 truncate w-full font-medium">
+                  {form.watch(`observations.${index}.address`)}
+                </span>
+              )}
             </div>
           </div>
         </AccordionTrigger>

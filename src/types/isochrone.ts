@@ -22,7 +22,7 @@ export type IsochronePolygon = {
 };
 
 export type IsochroneResponse = {
-  type: "FeatureCollection";
-  features: IsochronePolygon[];
+  polygons: { coordinates: number[][][] }[];
   fallbackUsed?: boolean;
+  errors?: string | null;
 };

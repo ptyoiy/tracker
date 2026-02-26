@@ -1,11 +1,12 @@
 // src/features/cctv-mapping/ui/CCTVList.tsx
 "use client";
 
-import { useAtom, useAtomValue } from "jotai";
-import { filteredCctvAtom, hoveredCctvIdAtom } from "../model/atoms";
+import { useAtom } from "jotai";
+import { useFilteredCctv } from "../lib/useFilteredCctv";
+import { hoveredCctvIdAtom } from "../model/atoms";
 
 export function CCTVList() {
-  const cctvs = useAtomValue(filteredCctvAtom);
+  const cctvs = useFilteredCctv();
   const [hoveredId, setHoveredId] = useAtom(hoveredCctvIdAtom);
 
   if (!cctvs.length) {

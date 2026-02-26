@@ -1,19 +1,32 @@
 // src/features/cctv-mapping/lib/route-cctv-count.ts
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { useAtomValue, useSetAtom } from "jotai";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import {
-  allRouteInfosAtom,
+  lastAnalysisParamsAtom,
   routeCctvCountAtom,
 } from "@/features/route-analysis/model/atoms";
+import { analyzeQueries } from "@/shared/api/queries";
 import { allCctvAtom } from "../model/atoms";
 import { filterCctvByContext } from "./buffer-filter";
 
 export function useComputeRouteCctvCount() {
   const allCctv = useAtomValue(allCctvAtom);
-  const allRoutes = useAtomValue(allRouteInfosAtom);
+  const lastParams = useAtomValue(lastAnalysisParamsAtom);
   const setCounts = useSetAtom(routeCctvCountAtom);
+
+  const { data: analysisData } = useQuery(
+    analyzeQueries.segments(
+      lastParams?.observations,
+      lastParams?.futureMinutes,
+    ),
+  );
+
+  const allRoutes = useMemo(() => {
+    return analysisData?.segments.flatMap((s) => s.candidateRoutes) ?? [];
+  }, [analysisData]);
 
   useEffect(() => {
     if (!allCctv.length || !allRoutes.length) {

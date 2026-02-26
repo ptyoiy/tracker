@@ -1,9 +1,12 @@
 "use client";
 
 import { format } from "date-fns";
-import { useAtomValue } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import { Info } from "lucide-react";
-import { observationsAtom } from "@/features/observation-input/model/atoms";
+import {
+  committedFutureMinutesAtom,
+  observationsAtom,
+} from "@/features/observation-input/model/atoms";
 import { Slider } from "@/shared/ui/slider";
 import { useIsochrone } from "../lib/useIsochrone";
 import type { IsochroneProfile } from "../model/atoms";
@@ -15,16 +18,18 @@ const profiles: { value: IsochroneProfile; label: string }[] = [
 ];
 
 export function IsochroneControls() {
-  const { isochrone, computeIsochrone, futureMinutes, setFutureMinutes } =
-    useIsochrone();
+  const {
+    isochrone,
+    computeIsochrone,
+    futureMinutes,
+    setFutureMinutes,
+    profile: currentProfile,
+    observationIndex: currentIndex,
+  } = useIsochrone();
   const observations = useAtomValue(observationsAtom);
+  const setCommittedMinutes = useSetAtom(committedFutureMinutesAtom);
 
-  const currentProfile = isochrone?.profile ?? "walking";
-  const currentIndex =
-    isochrone?.observationIndex ??
-    (observations.length > 0 ? observations.length - 1 : undefined);
-  const selectedObservation =
-    currentIndex !== undefined ? observations[currentIndex] : null;
+  const selectedObservation = observations[currentIndex];
 
   const handleClickProfile = (profile: IsochroneProfile) => {
     void computeIsochrone(profile);
@@ -40,10 +45,9 @@ export function IsochroneControls() {
     }
   };
 
-  // 슬라이더 조작이 끝났을 때만 API 호출 (디바운싱 효과)
   const handleSliderCommit = (value: number[]) => {
-    if (value[0] && isochrone) {
-      void computeIsochrone(currentProfile, currentIndex);
+    if (value[0]) {
+      setCommittedMinutes(value[0]);
     }
   };
 
@@ -101,7 +105,7 @@ export function IsochroneControls() {
       <div className="flex flex-col gap-1 border-t pt-2">
         <div className="flex justify-between items-center pr-1">
           <span className="text-[10px] font-semibold text-gray-500 ml-1">
-            추정 대상 시간
+            최대 이동 가능 범위 (분)
           </span>
           <span className="text-[10px] font-bold text-blue-600">
             {futureMinutes}분 후
