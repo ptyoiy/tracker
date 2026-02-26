@@ -18,7 +18,10 @@ import { IsochroneControls } from "@/features/map-view/ui/IsochroneControls";
 import { MapView } from "@/features/map-view/ui/MapView";
 import { observationsAtom } from "@/features/observation-input/model/atoms";
 import { ObservationForm } from "@/features/observation-input/ui/ObservationForm";
-import { selectedRouteInfosAtom } from "@/features/route-analysis/model/atoms";
+import {
+  analysisResultAtom,
+  selectedRouteInfosAtom,
+} from "@/features/route-analysis/model/atoms";
 import { RouteListPanel } from "@/features/route-analysis/ui/RouteAnalysisPanel";
 import { TransitLookupTab } from "@/features/transit-lookup/ui/TransitLookupTab";
 import { KakaoLoader } from "@/shared/lib/KakaoLoader";
@@ -48,6 +51,7 @@ export default function Home() {
 
   const observations = useAtomValue(observationsAtom);
   const selectedRoutes = useAtomValue(selectedRouteInfosAtom);
+  const analysisResult = useAtomValue(analysisResultAtom);
 
   useEffect(() => {
     if (activeSection) {
@@ -129,6 +133,12 @@ export default function Home() {
                 {lastObs && (
                   <span className="text-[11px] text-gray-500 font-semibold whitespace-nowrap truncate max-w-[140px] ml-1">
                     {lastObs.address}
+                  </span>
+                )}
+                {analysisResult.stale && (
+                  <span className="ml-2 text-[11px] text-red-500 font-bold whitespace-nowrap flex items-center gap-1 animate-pulse">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                    관측 변경됨 · 재분석 필요
                   </span>
                 )}
               </div>

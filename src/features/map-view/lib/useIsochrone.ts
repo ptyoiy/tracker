@@ -23,7 +23,7 @@ export function useIsochrone() {
   const [isochrone, setIsochrone] = useAtom(isochroneAtom);
   const [cache, setCache] = useAtom(isochroneCacheAtom);
   const observations = useAtomValue(observationsAtom);
-  const futureMinutes = useAtomValue(futureMinutesAtom);
+  const [futureMinutes, setFutureMinutes] = useAtom(futureMinutesAtom);
 
   const computeIsochrone = useCallback(
     async (profile: IsochroneProfile, index?: number) => {
@@ -83,5 +83,5 @@ export function useIsochrone() {
     ],
   );
 
-  return { isochrone, computeIsochrone };
+  return { isochrone, computeIsochrone, futureMinutes, setFutureMinutes };
 }

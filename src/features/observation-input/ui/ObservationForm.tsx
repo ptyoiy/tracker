@@ -2,16 +2,20 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useAtom, useSetAtom } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { Plus } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { useIsochrone } from "@/features/map-view/lib/useIsochrone";
 import { useAnalyze } from "@/features/route-analysis/lib/useAnalyze";
+import {
+  analysisResultAtom,
+  analyzeLoadingAtom,
+} from "@/features/route-analysis/model/atoms";
 import { Accordion } from "@/shared/ui/accordion";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
-import { Input } from "@/shared/ui/input";
+import { Slider } from "@/shared/ui/slider";
 import { activeSectionAtom, bottomSheetSnapAtom } from "@/store/atoms";
 import {
   futureMinutesAtom,
@@ -37,6 +41,8 @@ function toLocalDatetimeInput(iso?: string) {
 export function ObservationForm() {
   const [observationsAtomValue, setObservations] = useAtom(observationsAtom);
   const [currentFutureMinutes, setFutureMinutes] = useAtom(futureMinutesAtom);
+  const analysisResult = useAtomValue(analysisResultAtom);
+  const isAnalyzing = useAtomValue(analyzeLoadingAtom);
   const setObservationForm = useSetAtom(observationFormAtom);
   const setActiveSection = useSetAtom(activeSectionAtom);
   const setSnap = useSetAtom(bottomSheetSnapAtom);
@@ -213,25 +219,28 @@ export function ObservationForm() {
           </Button>
         </div>
 
-        <div className="space-y-2 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-          <label
-            htmlFor="futureMinutes"
-            className="text-sm font-bold text-gray-700"
-          >
-            추정 대상 시간 (+분)
-          </label>
-          <div className="flex gap-3 items-center">
-            <Input
-              id="futureMinutes"
-              type="number"
+        <div className="space-y-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+          <div className="flex justify-between items-center">
+            <label
+              htmlFor="futureMinutes"
+              className="text-sm font-bold text-gray-700"
+            >
+              추정 대상 시간
+            </label>
+            <span className="text-sm font-bold text-blue-600">
+              {form.watch("futureMinutes")}분 후
+            </span>
+          </div>
+          <div className="px-1 py-2">
+            <Slider
+              value={[form.watch("futureMinutes")]}
               min={1}
               max={60}
-              className="h-11 rounded-lg"
-              {...form.register("futureMinutes", { valueAsNumber: true })}
+              step={1}
+              onValueChange={(val) =>
+                form.setValue("futureMinutes", val[0] ?? 1)
+              }
             />
-            <span className="text-sm font-medium text-gray-500 shrink-0">
-              분 후
-            </span>
           </div>
           {form.formState.errors.futureMinutes && (
             <p className="text-xs text-red-500 font-medium">
@@ -244,9 +253,15 @@ export function ObservationForm() {
           <Button
             type="submit"
             className="w-full h-14 text-[16px] font-bold rounded-xl shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-transform"
-            disabled={!canSubmit}
+            disabled={!canSubmit || isAnalyzing}
           >
-            경로 분석 시작
+            {isAnalyzing
+              ? "분석 중..."
+              : analysisResult.stale
+                ? "재분석하기"
+                : analysisResult.segments
+                  ? "다시 분석하기"
+                  : "경로 분석 시작"}
           </Button>
           {!canSubmit && (
             <p className="text-center text-[12px] text-gray-400 mt-3 font-medium">

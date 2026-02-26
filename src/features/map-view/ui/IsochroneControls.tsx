@@ -3,6 +3,7 @@
 import { format } from "date-fns";
 import { useAtomValue } from "jotai";
 import { observationsAtom } from "@/features/observation-input/model/atoms";
+import { Slider } from "@/shared/ui/slider";
 import { useIsochrone } from "../lib/useIsochrone";
 import type { IsochroneProfile } from "../model/atoms";
 
@@ -13,7 +14,8 @@ const profiles: { value: IsochroneProfile; label: string }[] = [
 ];
 
 export function IsochroneControls() {
-  const { isochrone, computeIsochrone } = useIsochrone();
+  const { isochrone, computeIsochrone, futureMinutes, setFutureMinutes } =
+    useIsochrone();
   const observations = useAtomValue(observationsAtom);
 
   const currentProfile = isochrone?.profile ?? "walking";
@@ -29,6 +31,19 @@ export function IsochroneControls() {
 
   const handleClickPoint = (index: number) => {
     void computeIsochrone(currentProfile, index);
+  };
+
+  const handleSliderChange = (value: number[]) => {
+    if (value[0]) {
+      setFutureMinutes(value[0]);
+    }
+  };
+
+  // 슬라이더 조작이 끝났을 때만 API 호출 (디바운싱 효과)
+  const handleSliderCommit = (value: number[]) => {
+    if (value[0] && isochrone) {
+      void computeIsochrone(currentProfile, currentIndex);
+    }
   };
 
   if (observations.length === 0) return null;
@@ -64,9 +79,29 @@ export function IsochroneControls() {
             <span className="truncate" title={selectedObservation.address}>
               {selectedObservation.address}
             </span>
-            <span className="shrink-0 text-gray-300">·</span>
           </div>
         )}
+      </div>
+
+      <div className="flex flex-col gap-1 border-t pt-2">
+        <div className="flex justify-between items-center pr-1">
+          <span className="text-[10px] font-semibold text-gray-500 ml-1">
+            추정 대상 시간
+          </span>
+          <span className="text-[10px] font-bold text-blue-600">
+            {futureMinutes}분 후
+          </span>
+        </div>
+        <div className="px-1 py-2">
+          <Slider
+            value={[futureMinutes]}
+            min={1}
+            max={60}
+            step={1}
+            onValueChange={handleSliderChange}
+            onValueCommit={handleSliderCommit}
+          />
+        </div>
       </div>
 
       <div className="flex flex-col gap-1 border-t pt-2">

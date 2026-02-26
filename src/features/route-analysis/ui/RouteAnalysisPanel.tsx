@@ -2,7 +2,8 @@
 "use client";
 
 import { useAtomValue } from "jotai";
-import { ArrowRight, Navigation } from "lucide-react";
+import { AlertCircle, ArrowRight, Navigation } from "lucide-react";
+import { cn } from "@/shared/lib/utils";
 import {
   Accordion,
   AccordionContent,
@@ -10,16 +11,19 @@ import {
   AccordionTrigger,
 } from "@/shared/ui/accordion";
 import {
+  analysisResultAtom,
   analyzeErrorAtom,
   analyzeLoadingAtom,
-  segmentAnalysesAtom,
 } from "../model/atoms";
 import { RouteCard } from "./RouteCard";
 
 export function RouteListPanel() {
-  const segments = useAtomValue(segmentAnalysesAtom);
+  const analysisResult = useAtomValue(analysisResultAtom);
   const loading = useAtomValue(analyzeLoadingAtom);
   const error = useAtomValue(analyzeErrorAtom);
+
+  const segments = analysisResult.segments;
+  const isStale = analysisResult.stale;
 
   if (loading) {
     return (
@@ -55,7 +59,14 @@ export function RouteListPanel() {
   }
 
   return (
-    <div className="pb-10">
+    <div className={cn("pb-10 transition-opacity", isStale && "opacity-70")}>
+      {isStale && (
+        <div className="mb-4 flex items-center gap-2 p-3 bg-orange-50 border border-orange-100 rounded-xl text-[12px] text-orange-700 font-bold">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          관측 지점이 변경되었습니다. 정확한 분석을 위해 재분석이 필요합니다.
+        </div>
+      )}
+
       <Accordion type="single" collapsible className="w-full space-y-3">
         {segments.map((segment, idx) => {
           const routes = segment.candidateRoutes ?? [];
@@ -64,7 +75,10 @@ export function RouteListPanel() {
             <AccordionItem
               key={segment.id}
               value={segment.id}
-              className="border rounded-xl px-3 bg-white overflow-hidden shadow-sm transition-all hover:border-blue-100"
+              className={cn(
+                "border rounded-xl px-3 bg-white overflow-hidden shadow-sm transition-all hover:border-blue-100",
+                isStale && "hover:border-orange-100 bg-gray-50/30",
+              )}
             >
               <AccordionTrigger className="hover:no-underline py-4">
                 <div className="flex items-center justify-between w-full pr-2">
@@ -87,11 +101,23 @@ export function RouteListPanel() {
                       <span className="truncate max-w-[80px]">
                         {segment.to.label}
                       </span>
+                      {isStale && (
+                        <span className="ml-2 px-1.5 py-0.5 bg-gray-200 text-gray-500 text-[9px] rounded font-black whitespace-nowrap">
+                          이전 결과
+                        </span>
+                      )}
                     </div>
                   </div>
 
                   {/* Right: Count Summary */}
-                  <div className="text-[11px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-md shrink-0 border border-blue-100 ml-2">
+                  <div
+                    className={cn(
+                      "text-[11px] font-black px-2 py-1 rounded-md shrink-0 border ml-2",
+                      isStale
+                        ? "text-gray-400 bg-gray-100 border-gray-200"
+                        : "text-blue-600 bg-blue-50 border-blue-100",
+                    )}
+                  >
                     {routes.length}개 옵션
                   </div>
                 </div>
