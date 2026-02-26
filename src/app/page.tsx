@@ -27,12 +27,7 @@ import {
   AccordionTrigger,
 } from "@/shared/ui/accordion";
 import { Badge } from "@/shared/ui/badge";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/shared/ui/drawer";
+import { Drawer, DrawerContent } from "@/shared/ui/drawer";
 import {
   type ActiveSection,
   activeSectionAtom,
@@ -76,16 +71,12 @@ export default function Home() {
           onOpenChange={(open) => !open && setIsOpen(true)} // 닫힘 방지
           snapPoints={snapPoints}
           activeSnapPoint={snap}
-          setActiveSnapPoint={setSnap as any}
+          setActiveSnapPoint={setSnap}
           modal={false}
           dismissible={false}
           fadeFromIndex={2}
         >
           <DrawerContent className="z-50 shadow-[0_-8px_30px_rgb(0,0,0,0.12)] select-none flex flex-col outline-none border-t border-gray-200">
-            <DrawerHeader className="sr-only">
-              <DrawerTitle>분석 및 제어 센터</DrawerTitle>
-            </DrawerHeader>
-
             {/* Summary Context Bar - Proper Button Implementation */}
             <button
               type="button"

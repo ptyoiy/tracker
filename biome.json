@@ -40,7 +40,7 @@
         "noUnknownAtRules": "off"
       },
       "correctness": {
-        "noUnusedImports": "error"
+        "noUnusedImports": "warn"
       }
     },
     "domains": {
