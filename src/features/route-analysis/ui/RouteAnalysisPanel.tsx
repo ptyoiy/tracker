@@ -4,6 +4,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAtomValue } from "jotai";
 import { AlertCircle, ArrowRight, Navigation } from "lucide-react";
+import { observationsAtom } from "@/features/observation-input/model/atoms";
 import { analyzeQueries } from "@/shared/api/queries";
 import { cn } from "@/shared/lib/utils";
 import {
@@ -18,6 +19,7 @@ import { RouteCard } from "./RouteCard";
 export function RouteListPanel() {
   const lastParams = useAtomValue(lastAnalysisParamsAtom);
   const analysisResult = useAtomValue(analysisResultAtom);
+  const currentObservations = useAtomValue(observationsAtom);
 
   const {
     data,
@@ -32,6 +34,26 @@ export function RouteListPanel() {
 
   const segments = data?.segments;
   const isStale = analysisResult.stale;
+
+  // 현재 관측 지점 데이터를 기반으로 각 세그먼트의 시간차와 라벨을 계산
+  const enrichedSegments = segments?.map((segment) => {
+    const fromObs = currentObservations[segment.fromIndex];
+    const toObs = currentObservations[segment.toIndex];
+
+    let durationSeconds = 0;
+    if (fromObs && toObs) {
+      const fromTime = new Date(fromObs.timestamp).getTime();
+      const toTime = new Date(toObs.timestamp).getTime();
+      durationSeconds = Math.abs(fromTime - toTime) / 1000;
+    }
+
+    return {
+      ...segment,
+      from: fromObs || segment.from,
+      to: toObs || segment.to,
+      durationSeconds: durationSeconds, // 현재 관측 지점 시간차로 업데이트
+    };
+  });
 
   if (loading) {
     return (
@@ -52,7 +74,7 @@ export function RouteListPanel() {
     );
   }
 
-  if (!segments || segments.length === 0) {
+  if (!enrichedSegments || enrichedSegments.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-gray-400 text-center px-6">
         <Navigation className="w-12 h-12 mb-3 opacity-20" />
@@ -76,7 +98,7 @@ export function RouteListPanel() {
       )}
 
       <Accordion type="single" collapsible className="w-full space-y-3">
-        {segments.map((segment, idx) => {
+        {enrichedSegments.map((segment, idx) => {
           const routes = segment.candidateRoutes ?? [];
 
           return (

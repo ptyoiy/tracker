@@ -2,18 +2,14 @@
 
 import { useAtom, useAtomValue } from "jotai";
 import { Camera, Info, MapPinned, ShieldCheck, Target, X } from "lucide-react";
-import {
-  Circle,
-  CustomOverlayMap,
-  MapMarker,
-  useMap,
-} from "react-kakao-maps-sdk";
+import { Circle, CustomOverlayMap, useMap } from "react-kakao-maps-sdk";
 import { useFilteredCctv } from "@/features/cctv-mapping/lib/useFilteredCctv";
 import {
   cctvSearchCenterAtom,
   cctvSearchRadiusAtom,
   hoveredCctvIdAtom,
 } from "@/features/cctv-mapping/model/atoms";
+import { cn } from "@/shared/lib/utils";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
@@ -102,35 +98,66 @@ export function CCTVMarkers({ onCenterChange }: Props) {
       {cctvs.map((c) => {
         const isHovered = c.id === hoveredId;
         const isSelected = c.id === selectedId;
+        const isActive = isSelected || isHovered;
 
         return (
           <div key={c.id}>
-            <MapMarker
+            {/* Custom SVG Marker using CustomOverlayMap for better interaction and styling */}
+            <CustomOverlayMap
               position={{ lat: c.lat, lng: c.lng }}
-              image={{
-                src:
-                  isSelected || isHovered
-                    ? "/icons/cctv-active.png"
-                    : "/icons/cctv.png",
-                size: {
-                  width: isSelected || isHovered ? 24 : 18,
-                  height: isSelected || isHovered ? 24 : 18,
-                },
-              }}
-              onClick={() => {
-                setSelectedId(c.id === selectedId ? null : c.id, {
-                  lat: c.lat,
-                  lng: c.lng,
-                });
-              }}
-              zIndex={isSelected ? 50 : 1}
+              zIndex={isActive ? 50 : 1}
               clickable
-            />
+            >
+              <button
+                type="button"
+                className={cn(
+                  "relative flex items-center justify-center transition-all duration-200",
+                  "group -translate-x-1/2 -translate-y-1/2", // 중심점 맞춤
+                )}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedId(c.id === selectedId ? null : c.id, {
+                    lat: c.lat,
+                    lng: c.lng,
+                  });
+                }}
+              >
+                {/* Expand touch target area */}
+                <div className="absolute inset-0 -m-3 rounded-full" />
+
+                {/* Marker Body */}
+                <div
+                  className={cn(
+                    "flex items-center justify-center rounded-full shadow-lg border-2 transition-all duration-300",
+                    isActive
+                      ? "w-7 h-7 bg-blue-600 border-white scale-110"
+                      : "w-5 h-5 bg-white border-blue-500 scale-100",
+                  )}
+                >
+                  <Camera
+                    className={cn(
+                      "transition-colors duration-300",
+                      isActive ? "w-4 h-4 text-white" : "w-3 h-3 text-blue-600",
+                    )}
+                  />
+                </div>
+
+                {/* Direction Indicator (if known) */}
+                {c.direction !== "UNKNOWN" && (
+                  <div
+                    className={cn(
+                      "absolute -top-1 right-0 w-2 h-2 rounded-full border border-white shadow-sm",
+                      isActive ? "bg-orange-400" : "bg-blue-400",
+                    )}
+                  />
+                )}
+              </button>
+            </CustomOverlayMap>
 
             {isHovered && !isSelected && (
               <CustomOverlayMap
                 position={{ lat: c.lat, lng: c.lng }}
-                yAnchor={2.2}
+                yAnchor={2.8}
                 clickable
               >
                 <div className="rounded-full bg-black/80 px-2 py-0.5 text-[10px] text-white whitespace-nowrap border border-white/20 shadow-lg pointer-events-none">

@@ -1,15 +1,16 @@
 // src/features/cctv-mapping/lib/cctv-api.ts
-"use client";
-
+import { useQuery } from "@tanstack/react-query";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useEffect } from "react";
 import { viewportAtom } from "@/features/map-view/model/atoms";
+import { lastAnalysisParamsAtom } from "@/features/route-analysis/model/atoms";
 import { coordToAddress } from "@/shared/api/kakao/geocoder";
 import {
   fetchCctvInBounds,
   syncRegionCctv,
 } from "@/shared/api/public-data/cctv";
 import { findOpenAtmyCodeByAddress } from "@/shared/api/public-data/open-atmy-grp";
+import { analyzeQueries } from "@/shared/api/queries";
 import {
   appendCctvDataAtom,
   cctvLoadingAtom,
@@ -21,39 +22,97 @@ export function useLoadCctvOnce() {
   const appendData = useSetAtom(appendCctvDataAtom);
   const setLoading = useSetAtom(cctvLoadingAtom);
   const viewport = useAtomValue(viewportAtom);
+  const lastParams = useAtomValue(lastAnalysisParamsAtom);
 
-  // 1) 초기 4개 구역(강남, 강동, 서초, 송파) 선행 로딩
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <최초 1회만 실행>
+  // 경로 분석 결과 감시
+  const { data: analysisData } = useQuery(
+    analyzeQueries.segments(
+      lastParams?.observations,
+      lastParams?.futureMinutes,
+    ),
+  );
+
+  // 1) 초기 4개 구역 선행 로딩 및 경로 주변 자동 로딩
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <최초 한번만 실행>
   useEffect(() => {
     const preSyncCodes = ["3220000", "3240000", "3210000", "3230000"];
-    const wideBounds = {
-      sw: { lat: 33, lng: 124 },
-      ne: { lat: 39, lng: 132 },
-    };
 
-    const loadInitial = async () => {
+    const loadBatch = async (codes: string[]) => {
+      const wideBounds = {
+        sw: { lat: 33, lng: 124 },
+        ne: { lat: 39, lng: 132 },
+      };
+
       setLoading(true);
       try {
         await Promise.all(
-          preSyncCodes.map(async (orgCode) => {
+          codes.map(async (orgCode) => {
             if (loadedOrgCodes.has(orgCode)) return;
-
             await syncRegionCctv(orgCode);
             const data = await fetchCctvInBounds(wideBounds, orgCode);
             appendData({ orgCode, data });
           }),
         );
       } catch (e) {
-        console.error("Initial CCTV parallel load failed", e);
+        console.error("CCTV parallel load failed", e);
       } finally {
         setLoading(false);
       }
     };
 
-    loadInitial();
+    // 최초 1회 실행
+    loadBatch(preSyncCodes);
   }, []);
 
-  // 2) 뷰포트 변화에 따른 CCTV 로드 (기존 로직)
+  // 2) 경로 분석 완료 시 해당 경로 주변 지역구 데이터 로드
+  useEffect(() => {
+    if (!analysisData) return;
+
+    const loadRouteRegions = async () => {
+      // 모든 관측 지점의 지역구 코드 추출
+      const targetCoords = analysisData.segments.flatMap((s) => [s.from, s.to]);
+      const orgCodes = new Set<string>();
+
+      for (const coord of targetCoords) {
+        const address = await coordToAddress(coord.lat, coord.lng);
+        const orgCode = address
+          ? await findOpenAtmyCodeByAddress(address)
+          : null;
+        if (
+          orgCode &&
+          !orgCode.startsWith("6") &&
+          !loadedOrgCodes.has(orgCode)
+        ) {
+          orgCodes.add(orgCode);
+        }
+      }
+
+      if (orgCodes.size > 0) {
+        setLoading(true);
+        try {
+          await Promise.all(
+            Array.from(orgCodes).map(async (orgCode) => {
+              await syncRegionCctv(orgCode);
+              const data = await fetchCctvInBounds(
+                {
+                  sw: { lat: 33, lng: 124 },
+                  ne: { lat: 39, lng: 132 },
+                },
+                orgCode,
+              );
+              appendData({ orgCode, data });
+            }),
+          );
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadRouteRegions();
+  }, [analysisData, appendData, loadedOrgCodes, setLoading]);
+
+  // 3) 뷰포트 변화에 따른 CCTV 로드 (보조 로직)
   useEffect(() => {
     let cancelled = false;
     let timerId: NodeJS.Timeout;

@@ -47,6 +47,55 @@ function AccordionTrigger({
   );
 }
 
+type AccordionTriggerContentProps = {
+  index: number;
+  watchTimestamp: string;
+  watchLabel?: string;
+  watchAddress?: string;
+};
+// hh:mm 형식으로 시간 추출
+const formatTimeSummary = (ts: string) => {
+  if (!ts) return "--:--";
+  const parts = ts.split("T");
+  if (parts.length < 2) return "--:--";
+  return parts[1]; // hh:mm
+};
+
+function AccordionTriggerContent({
+  index,
+  watchTimestamp,
+  watchLabel,
+  watchAddress,
+}: AccordionTriggerContentProps) {
+  return (
+    <div className="flex items-center justify-between w-full pr-2">
+      {/* Left: Index & Time */}
+      <div className="flex items-center gap-3 shrink-0">
+        <span className="shrink-0 flex items-center justify-center w-6 h-6 text-[10px] font-black bg-gray-900 text-white rounded-md">
+          {index + 1}
+        </span>
+        <div className="flex flex-col items-start -space-y-0.5">
+          <span className="text-[13px] font-bold tabular-nums text-gray-700">
+            {formatTimeSummary(watchTimestamp)}
+          </span>
+        </div>
+      </div>
+
+      {/* Right: Label (Place) & Address - Pushed to right */}
+      <div className="flex-1 flex flex-col items-end min-w-0 ml-4 text-right">
+        <span className="text-[14px] font-black text-gray-900 truncate w-full">
+          {watchLabel || "장소 미지정"}
+        </span>
+        {watchAddress && (
+          <span className="text-[11px] text-gray-400 truncate w-full font-medium">
+            {watchAddress}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function AccordionContent({
   className,
   children,
@@ -63,4 +112,10 @@ function AccordionContent({
   );
 }
 
-export { Accordion, AccordionItem, AccordionTrigger, AccordionContent };
+export {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionTriggerContent,
+  AccordionContent,
+};

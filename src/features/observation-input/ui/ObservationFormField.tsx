@@ -2,12 +2,13 @@
 "use client";
 
 import { Clock, MapPin, Trash2 } from "lucide-react";
-import { Controller, type UseFormReturn } from "react-hook-form";
+import { Controller, type UseFormReturn, useWatch } from "react-hook-form";
 import { cn } from "@/shared/lib/utils";
 import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
+  AccordionTriggerContent,
 } from "@/shared/ui/accordion";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
@@ -24,21 +25,24 @@ export function ObservationFormFields({ index, form, onRemove }: Props) {
   const {
     register,
     control,
-    watch,
     formState: { errors },
   } = form;
 
   const obsErrors = errors.observations?.[index];
-  const watchTimestamp = watch(`observations.${index}.timestamp`);
-  const watchLabel = watch(`observations.${index}.label`);
+  const watchTimestamp = useWatch({
+    control,
+    name: `observations.${index}.timestamp`,
+  });
 
-  // hh:mm 형식으로 시간 추출
-  const formatTimeSummary = (ts: string) => {
-    if (!ts) return "--:--";
-    const parts = ts.split("T");
-    if (parts.length < 2) return "--:--";
-    return parts[1]; // hh:mm
-  };
+  const watchLabel = useWatch({
+    control,
+    name: `observations.${index}.label`,
+  });
+
+  const watchAddress = useWatch({
+    control,
+    name: `observations.${index}.address`,
+  });
 
   return (
     <AccordionItem
@@ -47,31 +51,12 @@ export function ObservationFormFields({ index, form, onRemove }: Props) {
     >
       <div className="flex items-center w-full">
         <AccordionTrigger className="hover:no-underline py-4 flex-1">
-          <div className="flex items-center justify-between w-full pr-2">
-            {/* Left: Index & Time */}
-            <div className="flex items-center gap-3 shrink-0">
-              <span className="shrink-0 flex items-center justify-center w-6 h-6 text-[10px] font-black bg-gray-900 text-white rounded-md">
-                {index + 1}
-              </span>
-              <div className="flex flex-col items-start -space-y-0.5">
-                <span className="text-[13px] font-bold tabular-nums text-gray-700">
-                  {formatTimeSummary(watchTimestamp)}
-                </span>
-              </div>
-            </div>
-
-            {/* Right: Label (Place) & Address - Pushed to right */}
-            <div className="flex-1 flex flex-col items-end min-w-0 ml-4 text-right">
-              <span className="text-[14px] font-black text-gray-900 truncate w-full">
-                {watchLabel || "장소 미지정"}
-              </span>
-              {form.watch(`observations.${index}.address`) && (
-                <span className="text-[11px] text-gray-400 truncate w-full font-medium">
-                  {form.watch(`observations.${index}.address`)}
-                </span>
-              )}
-            </div>
-          </div>
+          <AccordionTriggerContent
+            index={index}
+            watchTimestamp={watchTimestamp}
+            watchLabel={watchLabel}
+            watchAddress={watchAddress}
+          />
         </AccordionTrigger>
 
         <div className="flex items-center pr-1 border-l ml-1 pl-1 border-gray-100 shrink-0">
