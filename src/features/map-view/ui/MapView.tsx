@@ -1,14 +1,14 @@
 // src/features/map-view/ui/MapView.tsx
 "use client";
 
-import { useAtomValue } from "jotai";
-import { Check, Crosshair, Layers } from "lucide-react";
-import { useRef } from "react";
-import { Map as KakaoMap } from "react-kakao-maps-sdk";
 import { cctvLoadingAtom } from "@/features/cctv-mapping/model/atoms";
 import { observationsAtom } from "@/features/observation-input/model/atoms";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
+import { useAtomValue } from "jotai";
+import { Check, Crosshair, Layers } from "lucide-react";
+import { useRef } from "react";
+import { Map as KakaoMap } from "react-kakao-maps-sdk";
 import { useKakaoMapSdk } from "../lib/useKakaoMapSdk";
 import { useMapInteraction } from "../lib/useMapInteraction";
 import { useMapLayers } from "../lib/useMapLayers";
@@ -17,6 +17,7 @@ import { CCTVMarkers } from "./CCTVMarker";
 import { IsochronePolygon } from "./IsoChronePolygon";
 import { ObservationMarker } from "./ObservationMarker";
 import { RoutePolyline } from "./RoutePolyLine";
+import { TransitMarkers } from "./TransitMarkers";
 
 export function MapView() {
   const observations = useAtomValue(observationsAtom);
@@ -92,6 +93,11 @@ export function MapView() {
                 id: "cctv" as const,
                 label: "CCTV 마커",
                 color: "text-green-600",
+              },
+              {
+                id: "transit" as const,
+                label: "대중교통 현황",
+                color: "text-orange-500",
               },
             ].map((layer) => (
               <button
@@ -169,6 +175,11 @@ export function MapView() {
         {mapLayers.isochrone && <IsochronePolygon />}
         {mapLayers.cctv && (
           <CCTVMarkers
+            onCenterChange={(latlng) => panToWithOffset(latlng.lat, latlng.lng)}
+          />
+        )}
+        {mapLayers.transit && (
+          <TransitMarkers
             onCenterChange={(latlng) => panToWithOffset(latlng.lat, latlng.lng)}
           />
         )}

@@ -27,6 +27,7 @@ export type MapLayerVisibility = {
   isochrone: boolean;
   route: boolean;
   observations: boolean;
+  transit: boolean;
 };
 
 export type IsochroneSelection = {
@@ -50,4 +51,5 @@ export const mapLayersAtom = atom<MapLayerVisibility>({
   isochrone: true,
   route: true,
   observations: true,
+  transit: true,
 });

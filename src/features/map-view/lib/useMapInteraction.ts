@@ -1,15 +1,10 @@
 // src/features/map-view/lib/useMapInteraction.ts
 "use client";
 
+import { observationsAtom } from "@/features/observation-input/model/atoms";
+import { fullGeocode } from "@/shared/api/kakao/geocoder";
 import { useAtom, useSetAtom } from "jotai";
 import { useCallback } from "react";
-import { observationsAtom } from "@/features/observation-input/model/atoms";
-import {
-  transitLookupEndAtom,
-  transitLookupPickingAtom,
-  transitLookupStartAtom,
-} from "@/features/transit-lookup/model/atoms";
-import { fullGeocode } from "@/shared/api/kakao/geocoder";
 import { activePopupAtom } from "../model/atoms";
 
 export function useMapInteraction(
@@ -17,9 +12,6 @@ export function useMapInteraction(
 ) {
   const setObservations = useSetAtom(observationsAtom);
   const [activePopup, setActivePopup] = useAtom(activePopupAtom);
-  const [picking, setPicking] = useAtom(transitLookupPickingAtom);
-  const setTransitStart = useSetAtom(transitLookupStartAtom);
-  const setTransitEnd = useSetAtom(transitLookupEndAtom);
 
   const handleMapClick = useCallback(
     async (_t: kakao.maps.Map, mouseEvent: kakao.maps.event.MouseEvent) => {
@@ -31,15 +23,7 @@ export function useMapInteraction(
       const latlng = mouseEvent.latLng;
       const lat = latlng.getLat();
       const lng = latlng.getLng();
-
-      if (picking) {
-        if (picking === "start") setTransitStart({ lat, lng });
-        else setTransitEnd({ lat, lng });
-        setPicking(null);
-        panToWithOffset(lat, lng);
-        return;
-      }
-
+      panToWithOffset(lat, lng);
       const { address, buildingName } = await fullGeocode(lat, lng);
 
       setObservations((prev) => [
@@ -54,16 +38,7 @@ export function useMapInteraction(
         },
       ]);
     },
-    [
-      activePopup,
-      setActivePopup,
-      picking,
-      setPicking,
-      setTransitStart,
-      setTransitEnd,
-      setObservations,
-      panToWithOffset,
-    ],
+    [activePopup, setActivePopup, setObservations, panToWithOffset],
   );
 
   return { handleMapClick };

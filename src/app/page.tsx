@@ -1,16 +1,5 @@
 "use client";
 
-import { useAtom, useAtomValue } from "jotai";
-import {
-  Bus,
-  ChevronDown,
-  ChevronUp,
-  Info,
-  MapPin,
-  Navigation,
-  Shield,
-} from "lucide-react";
-import { useEffect, useRef } from "react";
 import { useLoadCctvOnce } from "@/features/cctv-mapping/lib/cctv-api";
 import { useComputeRouteCctvCount } from "@/features/cctv-mapping/lib/route-cctv-count";
 import { CCTVSearchTab } from "@/features/cctv-mapping/ui/CCTVSearchTab";
@@ -21,7 +10,7 @@ import { ObservationForm } from "@/features/observation-input/ui/ObservationForm
 import { useSelectedRoutes } from "@/features/route-analysis/lib/useSelectedRoutes";
 import { analysisResultAtom } from "@/features/route-analysis/model/atoms";
 import { RouteListPanel } from "@/features/route-analysis/ui/RouteAnalysisPanel";
-import { TransitLookupTab } from "@/features/transit-lookup/ui/TransitLookupTab";
+import { TransitNearbyPanel } from "@/features/transit-lookup/ui/TransitNearbyPanel";
 import { KakaoLoader } from "@/shared/lib/KakaoLoader";
 import { cn } from "@/shared/lib/utils";
 import { Accordion } from "@/shared/ui/accordion";
@@ -39,6 +28,17 @@ import {
   bottomSheetOpenAtom,
   bottomSheetSnapAtom,
 } from "@/store/atoms";
+import { useAtom, useAtomValue } from "jotai";
+import {
+  Bus,
+  ChevronDown,
+  ChevronUp,
+  Info,
+  MapPin,
+  Navigation,
+  Shield,
+} from "lucide-react";
+import { useEffect, useRef } from "react";
 
 const snapPoints = ["84px", 0.5, 0.9];
 export default function Home() {
@@ -221,12 +221,12 @@ export default function Home() {
 
                 <SectionItem
                   value="transit"
-                  title="대중교통 직접 조회"
+                  title="주변 대중교통 현황"
                   icon={<Bus className="w-5 h-5 text-orange-500" />}
                   iconBgClass="bg-orange-50"
                   isLast
                 >
-                  <TransitLookupTab />
+                  <TransitNearbyPanel />
                 </SectionItem>
               </Accordion>
             </div>
