@@ -10,8 +10,10 @@ import { getStationByUid } from "@/shared/api/public-data/bus-arrival";
 import { getRouteInfo } from "@/shared/api/public-data/bus-route-info";
 import { getStationByPos } from "@/shared/api/public-data/bus-station";
 import { getSubwayArrival } from "@/shared/api/public-data/subway-arrival";
-import { getSubwayTimetable } from "@/shared/api/public-data/subway-timetable";
-import subwayStations from "@/shared/config/subway-stations.json";
+import {
+  getSubwayTimetable,
+  type SubwayTimetableRaw,
+} from "@/shared/api/public-data/subway-timetable";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -217,70 +219,88 @@ async function fetchSubwayData(
       }
     } else {
       try {
-        const mapping = subwayStations as Record<string, string>;
-        const stationCode = mapping[stationName];
+        const arrivals = await getSubwayArrival(stationName);
+        const stationCode = arrivals[0]?.statnList
+          ?.split(",")
+          .map((s) => s.slice(-4));
+        for (const code of stationCode) {
+          if (code) {
+            const dayOfWeek = refDate.getDay();
+            const weekTag = dayOfWeek === 0 ? "3" : dayOfWeek === 6 ? "2" : "1";
 
-        if (stationCode) {
-          const dayOfWeek = refDate.getDay();
-          const weekTag = dayOfWeek === 0 ? "3" : dayOfWeek === 6 ? "2" : "1";
+            // 첫 2자리를 통해 노선번호 유추 (예: "0222" -> "2", "1075" -> "10")
+            const lineNm = parseInt(code.substring(0, 2), 10).toString();
+            let fetchPromises: Promise<SubwayTimetableRaw[]>[];
+            if (lineNm === "2" || lineNm === "2호선") {
+              const l2: "2" | "2호선" = lineNm;
+              fetchPromises = [
+                getSubwayTimetable(l2, stationName, weekTag, "내선"),
+                getSubwayTimetable(l2, stationName, weekTag, "외선"),
+              ];
+            } else {
+              fetchPromises = [
+                getSubwayTimetable(lineNm, stationName, weekTag, "상행"),
+                getSubwayTimetable(lineNm, stationName, weekTag, "하행"),
+              ];
+            }
+            const [up, down] = await Promise.all(fetchPromises);
 
-          const [up, down] = await Promise.all([
-            getSubwayTimetable(stationCode, weekTag, "1"),
-            getSubwayTimetable(stationCode, weekTag, "2"),
-          ]);
+            const mergeTrains = (items: SubwayTimetableRaw[]) =>
+              items
+                .map((t) => {
+                  const [th, tm, ts] = (t.trainArvlTm || "00:00:00").split(":");
+                  const tDate = new Date(refDate);
+                  tDate.setHours(
+                    Number.parseInt(th, 10),
+                    Number.parseInt(tm, 10),
+                    Number.parseInt(ts, 10),
+                    0,
+                  );
+                  const diffMins = Math.round(
+                    (tDate.getTime() - refDate.getTime()) / 60000,
+                  );
 
-          const mergeTrains = (
-            items: {
-              arrTime?: string;
-              trainNo: string;
-              expressYn: string;
-              endStatnNm: string;
-            }[],
-          ) =>
-            items
-              .map((t) => {
-                const [th, tm, ts] = (t.arrTime || "00:00:00").split(":");
-                const tDate = new Date(refDate);
-                tDate.setHours(parseInt(th), parseInt(tm), parseInt(ts), 0);
-                const diffMins = Math.round(
-                  (tDate.getTime() - refDate.getTime()) / 60000,
-                );
+                  return {
+                    trainNo: t.trainno,
+                    departureTime: `${th}:${tm}`,
+                    isExpress:
+                      t.trainKnd !== null &&
+                      t.trainKnd !== "일반" &&
+                      t.trainKnd !== "역원", // trainKnd를 기준으로 파악
+                    minutesFromRef: diffMins,
+                    endStatnNm: t.arvlStnNm,
+                  };
+                })
+                .filter(
+                  (t) => t.minutesFromRef >= -15 && t.minutesFromRef <= 45,
+                )
+                .sort((a, b) => a.minutesFromRef - b.minutesFromRef);
 
-                return {
-                  trainNo: t.trainNo,
-                  departureTime: `${th}:${tm}`,
-                  isExpress: t.expressYn === "D",
-                  minutesFromRef: diffMins,
-                  endStatnNm: t.endStatnNm,
-                };
-              })
-              .filter((t) => t.minutesFromRef >= -15 && t.minutesFromRef <= 45)
-              .sort((a, b) => a.minutesFromRef - b.minutesFromRef);
-
-          if (up.length > 0) {
+            if (up.length > 0) {
+              lines.push({
+                lineName: "상행/내선",
+                direction: `${up[0].arvlStnNm} 방면`,
+                mode: "timetable",
+                trains: mergeTrains(up),
+              });
+            }
+            if (down.length > 0) {
+              lines.push({
+                lineName: "하행/외선",
+                direction: `${down[0].arvlStnNm} 방면`,
+                mode: "timetable",
+                trains: mergeTrains(down),
+              });
+            }
+          } else {
+            // 역 코드가 없는 경우 의미 없는 열차 데이터를 넣지 않고 안내 메시지만 추가
             lines.push({
-              lineName: "상행/내선",
-              direction: up[0].endStatnNm + " 방면",
+              lineName: "안내",
+              direction: "시간표 미지원 (역코드 매핑 필요)",
               mode: "timetable",
-              trains: mergeTrains(up),
+              trains: [],
             });
           }
-          if (down.length > 0) {
-            lines.push({
-              lineName: "하행/외선",
-              direction: down[0].endStatnNm + " 방면",
-              mode: "timetable",
-              trains: mergeTrains(down),
-            });
-          }
-        } else {
-          // 역 코드가 없는 경우 의미 없는 열차 데이터를 넣지 않고 안내 메시지만 추가
-          lines.push({
-            lineName: "안내",
-            direction: "시간표 미지원 (역코드 매핑 필요)",
-            mode: "timetable",
-            trains: [],
-          });
         }
       } catch (e) {
         console.error("Subway timetable fetch fail", e);

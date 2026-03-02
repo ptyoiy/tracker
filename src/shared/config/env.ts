@@ -6,8 +6,10 @@ const envSchema = z.object({
   KAKAO_REST_API_KEY: z.string().min(1),
   TMAP_APP_KEY: z.string().min(1),
   MAPBOX_ACCESS_TOKEN: z.string().min(1),
+
   DATA_GO_KR_API_KEY: z.string().min(1),
-  DATA_GO_KR_API_ENCODING_KEY: z.string().min(1),
+  DATA_GO_KR_API_SUBWAY_TIMETABLE_KEY: z.string().min(1),
+
   TURSO_DATABASE_URL: z.string().min(1),
   TURSO_AUTH_TOKEN: z.string().min(1),
   SEOUL_SUBWAY_API_KEY: z.string().min(1),

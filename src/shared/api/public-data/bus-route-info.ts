@@ -1,5 +1,5 @@
-import ky from "ky";
 import { env } from "@/shared/config/env";
+import ky from "ky";
 
 export type BusRouteInfoRaw = {
   busRouteId: string;
@@ -22,10 +22,11 @@ type BusRouteInfoResponse = {
   };
 };
 
+/** 노선정보조회 서비스 */
 export async function getRouteInfo(busRouteId: string) {
   const url = "http://ws.bus.go.kr/api/rest/busRouteInfo/getRouteInfo";
   const searchParams = new URLSearchParams({
-    ServiceKey: env.DATA_GO_KR_API_KEY,
+    serviceKey: env.DATA_GO_KR_API_SUBWAY_TIMETABLE_KEY,
     busRouteId,
     resultType: "json",
   });

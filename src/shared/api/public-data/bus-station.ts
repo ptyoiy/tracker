@@ -20,10 +20,11 @@ type BusStationResponse = {
   };
 };
 
+/** 정류소정보조회 서비스 */
 export async function getStationByPos(tmX: number, tmY: number, radius = 500) {
   const url = "http://ws.bus.go.kr/api/rest/stationinfo/getStationByPos";
   const searchParams = new URLSearchParams({
-    serviceKey: env.DATA_GO_KR_API_KEY,
+    serviceKey: env.DATA_GO_KR_API_SUBWAY_TIMETABLE_KEY,
     tmX: String(tmX),
     tmY: String(tmY),
     radius: String(radius),

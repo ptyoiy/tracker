@@ -24,6 +24,7 @@ type BusArrivalResponse = {
   };
 };
 
+/* 정류소정보조회 서비스 */
 export async function getStationByUid(arsId: string) {
   const url = "http://ws.bus.go.kr/api/rest/stationinfo/getStationByUid";
   const searchParams = new URLSearchParams({

@@ -1,15 +1,32 @@
-import ky from "ky";
 import { env } from "@/shared/config/env";
+import ky from "ky";
 
 export type SubwayTimetableRaw = {
-  statnId: string;
-  statnNm: string;
-  updnLine: string; // "0" 상행, "1" 하행
-  trainNo: string;
-  arrTime: string; // 도착시간 (HH:mm:ss)
-  depTime: string; // 출발시간 (HH:mm:ss)
-  expressYn: string; // 급행여부 "G" 일반, "D" 급행 (노선마다 다를 수 있음)
-  endStatnNm: string; // 종점 역명
+  trainno: string;
+  trainKnd: string | null;
+  upbdnbSe: string;
+  wkndSe: string;
+  lineNm: string;
+  brlnNm: string | null;
+  stnCd: string;
+  stnNo: string;
+  stnNm: string;
+  dptreLineNm: string;
+  dptreStnCd: string;
+  dptreStnNm: string;
+  dptreStnNo: string;
+  arvlLineNm: string;
+  arvlStnCd: string;
+  arvlStnNm: string;
+  arvlStnNo: string;
+  trainDptreTm: string; // 출발시간 (HH:mm:ss)
+  trainArvlTm: string; // 도착시간 (HH:mm:ss)
+  etrnYn: string;
+  lnkgTrainno: string;
+  tmprTmtblYn: string;
+  vldBgngDt: string;
+  vldEndDt: string | null;
+  crtrYmd: string;
 };
 
 type SubwayTimetableResponse = {
@@ -26,29 +43,40 @@ type SubwayTimetableResponse = {
   };
 };
 
+type Line2Group = "2" | "2호선";
+
+export type UpbdnbSe<T extends string> = T extends Line2Group
+  ? "내선" | "외선"
+  : "상행" | "하행";
+
 /**
- * @param stationCode 4자리 역코드
+ * @param lineNm 노선명 (예: "2", "3")
+ * @param stnNm 역명 (예: "사당")
  * @param weekTag 요일 (1: 평일, 2: 토요일, 3: 휴일/일요일)
- * @param inoutTag 상하행 (1: 상행/내선, 2: 하행/외선)
+ * @param upbdnbSe 상하행/내외선 구분 (2호선은 내선/외선, 그 외 노선은 상행/하행)
  */
-export async function getSubwayTimetable(
-  stationCode: string,
+export async function getSubwayTimetable<T extends string>(
+  lineNm: T,
+  stnNm: string,
   weekTag: "1" | "2" | "3",
-  inoutTag: "1" | "2",
+  upbdnbSe: UpbdnbSe<T>,
 ) {
   // 실제 서울교통공사 API 엔드포인트
   // 기관별로 다를 수 있으나 가장 보편적인 공공데이터포털 API 포맷을 가정
-  const url =
-    "http://apis.data.go.kr/B553766/smt-stn-train-schedule/stn-train-schedule";
+  const url = "http://apis.data.go.kr/B553766/schedule/getTrainSch";
+
+  const wkndSe = weekTag === "1" ? "평일" : weekTag === "2" ? "토요일" : "휴일";
 
   const searchParams = new URLSearchParams({
-    serviceKey: env.DATA_GO_KR_API_KEY,
+    serviceKey: env.DATA_GO_KR_API_SUBWAY_TIMETABLE_KEY,
     pageNo: "1",
-    numOfRows: "500", // 하루치 다 가져오기 위해 넉넉히
-    statnId: stationCode,
-    weekTag: weekTag,
-    inoutTag: inoutTag,
-    _type: "json", // json 리턴
+    numOfRows: "260",
+    lineNm,
+    stnNm,
+    tmprTmtblYn: "N",
+    upbdnbSe,
+    wkndSe,
+    dataType: "JSON",
   });
 
   try {
