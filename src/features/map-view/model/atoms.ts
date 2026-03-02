@@ -21,6 +21,8 @@ export type ViewportBounds = {
 export type ActivePopup =
   | { type: "cctv"; id: string }
   | { type: "observation"; index: number }
+  | { type: "transit-bus"; stationId: string }
+  | { type: "transit-subway"; stationCode: string }
   | null;
 
 export type MapLayerVisibility = {

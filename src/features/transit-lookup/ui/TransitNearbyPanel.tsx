@@ -1,11 +1,17 @@
 // src/features/transit-lookup/ui/TransitNearbyPanel.tsx
 "use client";
 
-import { useAtom, useAtomValue } from "jotai";
-import { AlertCircle, Crosshair, MapPin, RefreshCw } from "lucide-react";
 import { viewportAtom } from "@/features/map-view/model/atoms";
 import { observationsAtom } from "@/features/observation-input/model/atoms";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/shared/ui/accordion";
 import { Button } from "@/shared/ui/button";
+import { useAtom, useAtomValue } from "jotai";
+import { AlertCircle, Crosshair, MapPin, RefreshCw } from "lucide-react";
 import { useTransitNearby } from "../lib/useTransitNearby";
 import {
   transitLocationAtom,
@@ -177,9 +183,32 @@ export function TransitNearbyPanel() {
                   주변에 조회된 버스 정류소가 없습니다.
                 </div>
               ) : (
-                data.bus.stations.map((station) => (
-                  <BusStationCard key={station.stationId} station={station} />
-                ))
+                <Accordion type="single" collapsible className="space-y-1">
+                  {data.bus.stations.map((station) => (
+                    <AccordionItem
+                      key={station.stationId}
+                      value={`bus-${station.stationId}`}
+                      className="border rounded-lg overflow-hidden"
+                    >
+                      <AccordionTrigger className="hover:no-underline px-3 py-2">
+                        <div className="flex items-center gap-2 w-full pr-2">
+                          <span className="font-semibold text-gray-900 text-sm">
+                            {station.stationName}
+                          </span>
+                          <span className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                            {station.distance}m
+                          </span>
+                          <span className="text-[10px] text-blue-600 ml-auto">
+                            {station.routes.length}개 노선
+                          </span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-1 pb-2">
+                        <BusStationCard station={station} />
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
               )}
             </div>
 
@@ -196,12 +225,34 @@ export function TransitNearbyPanel() {
                   주변에 조회된 지하철역이 없습니다.
                 </div>
               ) : (
-                data.subway.stations.map((station) => (
-                  <SubwayStationCard
-                    key={station.stationCode}
-                    station={station}
-                  />
-                ))
+                <Accordion type="single" collapsible className="space-y-1">
+                  {data.subway.stations.map((station) => (
+                    <AccordionItem
+                      key={station.stationCode}
+                      value={`subway-${station.stationCode}`}
+                      className="border rounded-lg overflow-hidden"
+                    >
+                      <AccordionTrigger className="hover:no-underline px-3 py-2">
+                        <div className="flex items-center gap-2 w-full pr-2">
+                          <span className="font-semibold text-gray-900 text-sm">
+                            {station.stationName}역
+                          </span>
+                          <span className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                            {station.distance}m
+                          </span>
+                          <span className="text-xs font-medium text-orange-600 ml-auto">
+                            {Array.from(
+                              new Set(station.lines.map((l) => l.lineName)),
+                            ).join(" / ")}
+                          </span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-1 pb-2">
+                        <SubwayStationCard station={station} />
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
               )}
             </div>
           </div>

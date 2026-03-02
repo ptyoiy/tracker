@@ -1,6 +1,7 @@
 // src/shared/api/public-data/mocks.ts
 import type { BusArrivalRaw } from "./bus-arrival";
 import type { BusRouteInfoRaw } from "./bus-route-info";
+import type { BusRouteStationRaw } from "./bus-route-stations";
 import type { BusStationRaw } from "./bus-station";
 
 export const MOCK_ROUTE_INFO: BusRouteInfoRaw = {
@@ -38,6 +39,84 @@ export const MOCK_STATIONS_BY_POS: BusStationRaw[] = [
     tmX: "126.912478",
     tmY: "37.581290",
     dist: "400",
+  },
+];
+
+export const MOCK_STATIONS_BY_ROUTE: BusRouteStationRaw[] = [
+  {
+    stationNo: "1",
+    stationNm: "서부운수기점",
+    arsId: "13285",
+    stationId: "112000202",
+    seq: "1",
+    section: "0",
+    gpsX: "126.910757",
+    gpsY: "37.581336",
+    direction: "건대입구역",
+    fullSectDist: "0",
+    beginTm: "04:20",
+    lastTm: "22:40",
+    transYn: "N",
+  },
+  {
+    stationNo: "2",
+    stationNm: "북가좌2동주민센터",
+    arsId: "13175",
+    stationId: "112000092",
+    seq: "2",
+    section: "1",
+    gpsX: "126.911478",
+    gpsY: "37.580290",
+    direction: "건대입구역",
+    fullSectDist: "350",
+    beginTm: "04:21",
+    lastTm: "22:41",
+    transYn: "N",
+  },
+  {
+    stationNo: "3",
+    stationNm: "증산교앞",
+    arsId: "13176",
+    stationId: "112000093",
+    seq: "3",
+    section: "1",
+    gpsX: "126.912478",
+    gpsY: "37.581290",
+    direction: "건대입구역",
+    fullSectDist: "480",
+    beginTm: "04:23",
+    lastTm: "22:43",
+    transYn: "Y",
+  },
+  {
+    stationNo: "4",
+    stationNm: "홍제역",
+    arsId: "13177",
+    stationId: "112000094",
+    seq: "4",
+    section: "2",
+    gpsX: "126.943538",
+    gpsY: "37.587690",
+    direction: "건대입구역",
+    fullSectDist: "620",
+    beginTm: "04:25",
+    lastTm: "22:45",
+    transYn: "Y",
+  },
+  {
+    stationNo: "5",
+    stationNm: "무악재역",
+    arsId: "13178",
+    stationId: "112000095",
+    seq: "5",
+    section: "2",
+    gpsX: "126.950178",
+    gpsY: "37.582190",
+    direction: "건대입구역",
+    fullSectDist: "750",
+    beginTm: "04:27",
+    lastTm: "22:47",
+    transYn: "N",
   },
 ];
 

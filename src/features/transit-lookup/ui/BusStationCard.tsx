@@ -1,16 +1,37 @@
 // src/features/transit-lookup/ui/BusStationCard.tsx
+"use client";
+
 import { Badge } from "@/shared/ui/badge";
+import { useAtomValue } from "jotai";
+import { MapPin } from "lucide-react";
+import { useState } from "react";
+import { transitReferenceTimeAtom } from "../model/atoms";
 import type { BusStationResult } from "../model/types";
+import { RouteTraceView } from "./RouteTraceView";
 
 export function BusStationCard({ station }: { station: BusStationResult }) {
+  const [traceRoute, setTraceRoute] = useState<{
+    routeId: string;
+    routeName: string;
+  } | null>(null);
+  const refTime = useAtomValue(transitReferenceTimeAtom);
+  const referenceTime = refTime || new Date().toISOString();
+
+  if (traceRoute) {
+    return (
+      <RouteTraceView
+        type="bus"
+        routeId={traceRoute.routeId}
+        routeName={traceRoute.routeName}
+        boardingStationId={station.stationId}
+        referenceTime={referenceTime}
+        onClose={() => setTraceRoute(null)}
+      />
+    );
+  }
+
   return (
-    <div className="flex flex-col gap-2 mb-4">
-      <div className="flex items-center gap-2">
-        <span className="font-semibold text-gray-900 text-sm">
-          {station.stationName}
-        </span>
-        <span className="text-xs text-gray-500">({station.distance}m)</span>
-      </div>
+    <div className="flex flex-col gap-2">
       <div className="bg-gray-50 border border-gray-100 rounded-lg p-2 flex flex-col gap-1">
         {station.routes.length === 0 ? (
           <div className="text-xs text-gray-400 py-2 text-center">
@@ -24,17 +45,30 @@ export function BusStationCard({ station }: { station: BusStationResult }) {
             >
               <div className="flex flex-col gap-0.5">
                 <div className="flex items-center gap-1.5">
-                  <span
-                    className={`font-bold text-sm ${
-                      route.routeType.includes("광역")
-                        ? "text-red-500"
-                        : route.routeType.includes("간선")
-                          ? "text-blue-500"
-                          : "text-green-500"
-                    }`}
+                  <button
+                    type="button"
+                    className="flex items-center gap-1 hover:underline"
+                    onClick={() =>
+                      setTraceRoute({
+                        routeId: route.routeId,
+                        routeName: route.routeName,
+                      })
+                    }
+                    title="경유 정류장 보기"
                   >
-                    {route.routeName}
-                  </span>
+                    <span
+                      className={`font-bold text-sm ${
+                        route.routeType.includes("광역")
+                          ? "text-red-500"
+                          : route.routeType.includes("간선")
+                            ? "text-blue-500"
+                            : "text-green-500"
+                      }`}
+                    >
+                      {route.routeName}
+                    </span>
+                    <MapPin className="w-3 h-3 text-gray-400" />
+                  </button>
                   <span className="text-[10px] text-gray-500 bg-white px-1 py-0.5 rounded border border-gray-100">
                     {route.routeType}
                   </span>

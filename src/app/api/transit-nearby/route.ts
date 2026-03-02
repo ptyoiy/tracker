@@ -22,6 +22,27 @@ const statInfoData = statInfoDataRaw as Record<
   { subwayId: string; statnNm: string; lineName: string }
 >;
 
+function subwayIdToLineName(subwayId: string): string {
+  const map: Record<string, string> = {
+    "1001": "1호선",
+    "1002": "2호선",
+    "1003": "3호선",
+    "1004": "4호선",
+    "1005": "5호선",
+    "1006": "6호선",
+    "1007": "7호선",
+    "1008": "8호선",
+    "1009": "9호선",
+    "1063": "경의중앙선",
+    "1065": "공항철도",
+    "1067": "경춘선",
+    "1075": "수인분당선",
+    "1077": "신분당선",
+    "1092": "우이신설선",
+    "1032": "GTX-A",
+  };
+  return map[subwayId] ?? `${subwayId}호선`;
+}
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -90,8 +111,7 @@ async function fetchBusData(
   const stations = await getStationByPos(lng, lat, radius);
   if (!stations || stations.length === 0) return [];
 
-  // 부하 방지용 상위 5개
-  const topStations = stations.slice(0, 5);
+  const topStations = stations;
   const results: BusStationResult[] = [];
 
   for (const st of topStations) {
@@ -192,7 +212,7 @@ async function fetchSubwayData(
     }
   }
 
-  const topStations = uniqueKakaoStations.slice(0, 3);
+  const topStations = uniqueKakaoStations;
   const results: SubwayStationResult[] = [];
 
   for (const st of topStations) {
@@ -207,14 +227,12 @@ async function fetchSubwayData(
       try {
         const arrivals = await getSubwayArrival(stationName);
         for (const arr of arrivals) {
+          const resolvedLineName = subwayIdToLineName(arr.subwayId);
           lines.push({
-            lineName:
-              arr.subwayId === "1002"
-                ? "2호선"
-                : arr.subwayId === "1001"
-                  ? "1호선"
-                  : "지하철",
+            lineName: resolvedLineName,
+            stationLineName: resolvedLineName,
             direction: arr.trainLineNm,
+            updnLine: arr.updnLine as "상행" | "하행" | "내선" | "외선",
             mode: "realtime",
             arrival: arr.arvlMsg2,
             trainNo: arr.btrainNo,
@@ -284,17 +302,25 @@ async function fetchSubwayData(
                 .sort((a, b) => a.minutesFromRef - b.minutesFromRef);
 
             if (up.length > 0) {
+              const isLine2 = lineNm === "2" || lineNm === "2호선";
+              const resolvedLineName = statData.lineName || lineNm;
               lines.push({
-                lineName: "상행/내선",
+                lineName: isLine2 ? "내선" : "상행",
+                stationLineName: resolvedLineName,
                 direction: `${up[0].arvlStnNm} 방면`,
+                updnLine: isLine2 ? "내선" : "상행",
                 mode: "timetable",
                 trains: mergeTrains(up),
               });
             }
             if (down.length > 0) {
+              const isLine2 = lineNm === "2" || lineNm === "2호선";
+              const resolvedLineName = statData.lineName || lineNm;
               lines.push({
-                lineName: "하행/외선",
+                lineName: isLine2 ? "외선" : "하행",
+                stationLineName: resolvedLineName,
                 direction: `${down[0].arvlStnNm} 방면`,
+                updnLine: isLine2 ? "외선" : "하행",
                 mode: "timetable",
                 trains: mergeTrains(down),
               });
