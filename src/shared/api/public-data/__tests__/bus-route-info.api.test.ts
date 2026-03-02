@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getRouteInfo } from "./bus-route-info";
+import { getRouteInfo } from "../bus-route-info";
 
 describe("bus-route-info API", () => {
   it("should fetch route detailed info", async () => {

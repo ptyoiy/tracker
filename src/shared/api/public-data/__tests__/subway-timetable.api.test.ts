@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getSubwayTimetable } from "./subway-timetable";
+import { getSubwayTimetable } from "../subway-timetable";
 
 describe("subway-timetable API", () => {
   it("should fetch subway timetable info", async () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getStationByPos } from "./bus-station";
+import { getStationByPos } from "../bus-station";
 
 describe("bus-station API", () => {
   it("should fetch nearby bus stations", async () => {

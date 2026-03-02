@@ -1,8 +1,6 @@
 // src/features/route-analysis/ui/RouteAnalysisPanel.tsx
 "use client";
 
-import { useAtomValue } from "jotai";
-import { AlertCircle, ArrowRight, Navigation } from "lucide-react";
 import { useAnalyzeQuery } from "@/features/observation-input/lib/useAnalyzeQuery";
 import { observationsAtom } from "@/features/observation-input/model/atoms";
 import { cn } from "@/shared/lib/utils";
@@ -12,6 +10,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/shared/ui/accordion";
+import { useAtomValue } from "jotai";
+import { AlertCircle, ArrowRight, Navigation } from "lucide-react";
 import { analysisResultAtom, lastAnalysisParamsAtom } from "../model/atoms";
 import { RouteCard } from "./RouteCard";
 
@@ -165,8 +165,12 @@ export function RouteListPanel() {
               <AccordionContent className="pt-0 pb-4">
                 <div className="grid gap-2.5 pt-2 border-t border-gray-50">
                   {routes.length > 0 ? (
-                    routes.map((route) => (
-                      <RouteCard key={route.id} route={route} />
+                    routes.map((route, routeIdx) => (
+                      <RouteCard
+                        key={route.id}
+                        route={route}
+                        index={routeIdx}
+                      />
                     ))
                   ) : (
                     <div className="p-4 border border-dashed rounded-xl text-center text-xs text-gray-400 bg-gray-50/50">

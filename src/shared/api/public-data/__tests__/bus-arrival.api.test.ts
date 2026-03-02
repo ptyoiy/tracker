@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getStationByUid } from "./bus-arrival";
+import { getStationByUid } from "../bus-arrival";
 
 describe("bus-arrival API", () => {
   it("should fetch real-time arrival info for a station", async () => {
