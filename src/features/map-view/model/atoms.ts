@@ -67,3 +67,6 @@ export const cctvPurposesAtom = atom((get) => {
 
 // 숨길 CCTV 목적 Set (빈 Set = 모두 표시)
 export const cctvPurposeFilterAtom = atom(new Set<string>());
+
+// 선택 목록에서 Hover 중인 경로 ID (지도 강조용)
+export const hoveredRouteIdAtom = atom<string | null>(null);

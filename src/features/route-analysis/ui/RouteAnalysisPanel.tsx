@@ -14,6 +14,7 @@ import { useAtomValue } from "jotai";
 import { AlertCircle, ArrowRight, Navigation } from "lucide-react";
 import { analysisResultAtom, lastAnalysisParamsAtom } from "../model/atoms";
 import { RouteCard } from "./RouteCard";
+import { RouteGroupCard } from "./RouteGroupCard";
 
 export function RouteListPanel() {
   const lastParams = useAtomValue(lastAnalysisParamsAtom);
@@ -164,19 +165,49 @@ export function RouteListPanel() {
 
               <AccordionContent className="pt-0 pb-4">
                 <div className="grid gap-2.5 pt-2 border-t border-gray-50">
-                  {routes.length > 0 ? (
-                    routes.map((route, routeIdx) => (
-                      <RouteCard
-                        key={route.id}
-                        route={route}
-                        index={routeIdx}
-                      />
-                    ))
-                  ) : (
-                    <div className="p-4 border border-dashed rounded-xl text-center text-xs text-gray-400 bg-gray-50/50">
-                      해당 구간에서 검색된 경로가 없습니다.
-                    </div>
-                  )}
+                  {(() => {
+                    if (routes.length === 0) {
+                      return (
+                        <div className="p-4 border border-dashed rounded-xl text-center text-xs text-gray-400 bg-gray-50/50">
+                          해당 구간에서 검색된 경로가 없습니다.
+                        </div>
+                      );
+                    }
+
+                    const elements: React.ReactNode[] = [];
+                    const renderedRouteIds = new Set<string>();
+
+                    // 1. 그룹 렌더링
+                    if (segment.overlapGroups) {
+                      segment.overlapGroups.forEach((group) => {
+                        elements.push(
+                          <RouteGroupCard
+                            key={group.id}
+                            group={group}
+                            candidateRoutes={routes}
+                          />,
+                        );
+                        group.memberRouteIds.forEach((id) => {
+                          renderedRouteIds.add(id);
+                        });
+                      });
+                    }
+
+                    // 2. 그룹에 속하지 않은 개별 라우트 렌더링
+                    routes.forEach((route, routeIdx) => {
+                      if (!renderedRouteIds.has(route.id)) {
+                        elements.push(
+                          <RouteCard
+                            key={route.id}
+                            route={route}
+                            index={routeIdx}
+                          />,
+                        );
+                      }
+                    });
+
+                    return elements;
+                  })()}
                 </div>
               </AccordionContent>
             </AccordionItem>

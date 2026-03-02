@@ -28,6 +28,14 @@ export type RouteInfo = {
   isReasonable: boolean; // 실제 경과 시간과의 유사성 여부
 };
 
+export type RouteGroup = {
+  id: string; // 예: "bus_group_1"
+  busNumbers: string[]; // ["4312", "4313"]
+  memberRouteIds: string[]; // 이 그룹에 속한 RouteInfo.id 목록
+  commonPolyline: { lat: number; lng: number }[]; // 공통 구간 좌표
+  durationRange: [number, number]; // [최소소요시간, 최대소요시간]
+};
+
 export type SegmentAnalysis = {
   id: string; // 예: "0-1"
   fromIndex: number;
@@ -40,6 +48,7 @@ export type SegmentAnalysis = {
   inferredMode: TransportMode;
   candidateRoutes: RouteInfo[]; // TMAP 경로 후보 (초기엔 빈 배열)
   transits: TmapTransitRoute[]; // 대중교통 경로 (여러 개일 수 있음)
+  overlapGroups?: RouteGroup[]; // 신규 추가
 };
 
 export type AnalyzeRequest = {

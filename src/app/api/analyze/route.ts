@@ -1,5 +1,3 @@
-import { format } from "date-fns";
-import { type NextRequest, NextResponse } from "next/server";
 import { analyzeSegment } from "@/shared/api/analyze/segment";
 import { getDrivingRoute } from "@/shared/api/tmap/driving";
 import { getPedestrianRoute } from "@/shared/api/tmap/pedestrian";
@@ -10,10 +8,14 @@ import {
 import type {
   AnalyzeRequest,
   AnalyzeResponse,
+  RouteGroup,
   RouteInfo,
+  RouteLeg,
   SegmentAnalysis,
   TransportMode,
 } from "@/types/analyze";
+import { format } from "date-fns";
+import { type NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
@@ -131,6 +133,90 @@ export async function POST(request: NextRequest) {
           Math.abs(b.totalDurationSeconds - basic.duration),
       );
 
+      // --- 버스 경로 오버랩 그룹핑 로직 (엄격한 기준 적용) ---
+      const overlapGroups: RouteGroup[] = [];
+
+      // 1. transit 경로 중 BUS leg가 하나 존재하는 경로들만 추출
+      type TransitRouteInfo = {
+        route: RouteInfo;
+        busLeg: RouteLeg;
+        busLegIdx: number;
+      };
+      const busCandidates: TransitRouteInfo[] = candidateRoutes
+        .filter((r) => r.primaryMode === "transit")
+        .map((r) => {
+          const busLegIdx = r.legs.findIndex((leg) => leg.mode === "BUS");
+          // 현재는 심플하게 BUS leg가 있는 경로 중 첫 번째 BUS leg를 기준으로 그룹핑
+          return { route: r, busLeg: r.legs[busLegIdx], busLegIdx };
+        })
+        .filter((c) => c.busLegIdx !== -1 && c.busLeg.polyline.length >= 2);
+
+      // 거리 계산 헬퍼 (단순 피타고라스 / 혹은 turf 사용 가능. 여기선 간단한 위경도 차이로 근사)
+      // 위도 1도 약 111km, 경도 1도 약 88km (서울 기준) -> 50m는 대략 0.0005도
+      const isClose = (
+        p1: { lat: number; lng: number },
+        p2: { lat: number; lng: number },
+      ) => {
+        const dLat = Math.abs(p1.lat - p2.lat);
+        const dLng = Math.abs(p1.lng - p2.lng);
+        return dLat < 0.0006 && dLng < 0.0006;
+      };
+
+      // 2. 그룹핑
+      for (const candidate of busCandidates) {
+        let matchedGroup = null;
+        const busPoly = candidate.busLeg.polyline;
+        const startStop = busPoly[0];
+        const endStop = busPoly[busPoly.length - 1];
+
+        for (const group of overlapGroups) {
+          const groupPoly = group.commonPolyline;
+          const groupStart = groupPoly[0];
+          const groupEnd = groupPoly[groupPoly.length - 1];
+
+          // 시작점과 종료점이 모두 비슷한 경우에만 같은 그룹으로 취급
+          if (isClose(startStop, groupStart) && isClose(endStop, groupEnd)) {
+            matchedGroup = group;
+            break;
+          }
+        }
+
+        if (matchedGroup) {
+          matchedGroup.memberRouteIds.push(candidate.route.id);
+          const busNo = candidate.busLeg.route || "Unknown";
+          if (!matchedGroup.busNumbers.includes(busNo)) {
+            matchedGroup.busNumbers.push(busNo);
+          }
+          // duration range 갱신
+          const duration = candidate.route.totalDurationSeconds;
+          matchedGroup.durationRange[0] = Math.min(
+            matchedGroup.durationRange[0],
+            duration,
+          );
+          matchedGroup.durationRange[1] = Math.max(
+            matchedGroup.durationRange[1],
+            duration,
+          );
+        } else {
+          // 새 그룹 생성
+          overlapGroups.push({
+            id: `group_${segmentId}_${overlapGroups.length + 1}`,
+            busNumbers: [candidate.busLeg.route || "Unknown"],
+            memberRouteIds: [candidate.route.id],
+            commonPolyline: busPoly, // 첫 번째 후보의 polyline을 대표로 사용
+            durationRange: [
+              candidate.route.totalDurationSeconds,
+              candidate.route.totalDurationSeconds,
+            ],
+          });
+        }
+      }
+
+      // 3. 멤버가 2개 이상인 그룹만 유효한 오버랩 그룹으로 취급
+      const validGroups = overlapGroups.filter(
+        (g) => g.memberRouteIds.length > 1,
+      );
+
       segments.push({
         id: segmentId,
         fromIndex: i,
@@ -143,6 +229,7 @@ export async function POST(request: NextRequest) {
         inferredMode: basic.transportMode as TransportMode,
         candidateRoutes,
         transits: transResult.status === "fulfilled" ? transResult.value : [],
+        overlapGroups: validGroups.length > 0 ? validGroups : undefined,
       });
     }
 

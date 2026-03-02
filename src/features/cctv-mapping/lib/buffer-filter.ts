@@ -1,3 +1,5 @@
+import { getDistanceKm } from "@/shared/lib/geo/distance";
+import type { CCTV, CCTVFilterContext } from "@/types/cctv";
 import {
   booleanPointInPolygon,
   buffer,
@@ -5,8 +7,6 @@ import {
   point,
   polygon,
 } from "@turf/turf";
-import { getDistanceKm } from "@/shared/lib/geo/distance";
-import type { CCTV, CCTVFilterContext } from "@/types/cctv";
 
 export function filterCctvByContext(
   cctvs: CCTV[],
@@ -17,7 +17,8 @@ export function filterCctvByContext(
   if (ctx.type === "ROUTE") {
     const line = lineString(ctx.polyline);
 
-    const buffered = buffer(line, ctx.bufferMeters, { units: "meters" });
+    // 사용자의 요청에 따라 경로 타입일 때 cctv 탐색 반경을 기존 절반으로 축소
+    const buffered = buffer(line, ctx.bufferMeters / 2, { units: "meters" });
     if (!buffered || !buffered.geometry || !buffered.geometry.coordinates) {
       return [];
     }

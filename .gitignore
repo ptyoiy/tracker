@@ -44,3 +44,9 @@ next-env.d.ts
 storybook-static
 
 certificates
+*.md
+public/data/bus_arrival&station.docx
+public/data/statInfo.csv
+public/data/route_info.docx
+.gitignore
+document.docx
