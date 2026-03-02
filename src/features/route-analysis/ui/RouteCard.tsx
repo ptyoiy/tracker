@@ -182,7 +182,7 @@ export function RouteCard({ route, index }: Props) {
 
       {transitLegs.length > 0 && (
         <div className="w-full mt-2 pt-3 border-t border-dashed border-gray-200 flex items-center flex-wrap gap-y-2 text-[11px] font-medium text-gray-600">
-          {transitLegs.map((leg: any, legIdx: number) => (
+          {transitLegs.map((leg, legIdx: number) => (
             <div
               key={`${route.id}-leg-${legIdx}`}
               className="flex items-center gap-1.5"

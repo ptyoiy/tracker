@@ -24,8 +24,9 @@ export type BusArrivalRaw = {
 // };
 
 /* 정류소정보조회 서비스 */
-export async function getStationByUid(): Promise<BusArrivalRaw[]> {
+export async function getStationByUid(arsId: string): Promise<BusArrivalRaw[]> {
   // TODO: 실제 API 승인 전까지 임시 데이터 사용. 나중에 이 줄과 mock import를 삭제하세요.
+  console.log(arsId);
   return MOCK_ARRIVALS_BY_UID;
 
   // const url = "http://ws.bus.go.kr/api/rest/stationinfo/getStationByUid";

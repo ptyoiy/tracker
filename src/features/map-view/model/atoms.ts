@@ -1,3 +1,4 @@
+import type { CCTV } from "@/types/cctv";
 import { atom } from "jotai";
 
 export type IsochroneProfile = "walking" | "driving" | "cycling";
@@ -53,3 +54,16 @@ export const mapLayersAtom = atom<MapLayerVisibility>({
   observations: true,
   transit: true,
 });
+
+// 별도로 참조 — 순환 의존 방지를 위해 여기서 직접 선언
+export const allCctvForPurposeAtom = atom<CCTV[]>([]);
+
+// CCTV 설치 목적 고유 목록 (동적으로 데이터에서 추출)
+export const cctvPurposesAtom = atom((get) => {
+  const all = get(allCctvForPurposeAtom);
+  const purposes = new Set<string>(all.map((c) => c.purpose).filter(Boolean));
+  return Array.from(purposes).sort();
+});
+
+// 숨길 CCTV 목적 Set (빈 Set = 모두 표시)
+export const cctvPurposeFilterAtom = atom(new Set<string>());

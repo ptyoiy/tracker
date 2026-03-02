@@ -1,8 +1,5 @@
 // src/features/map-view/ui/CCTVMarker.tsx
 
-import { useAtom, useAtomValue } from "jotai";
-import { Camera, Info, MapPinned, ShieldCheck, Target, X } from "lucide-react";
-import { Circle, CustomOverlayMap, useMap } from "react-kakao-maps-sdk";
 import { useFilteredCctv } from "@/features/cctv-mapping/lib/useFilteredCctv";
 import {
   cctvSearchCenterAtom,
@@ -13,14 +10,19 @@ import { cn } from "@/shared/lib/utils";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
+import { useAtom, useAtomValue } from "jotai";
+import { Camera, Info, MapPinned, ShieldCheck, Target, X } from "lucide-react";
+import { Circle, CustomOverlayMap, useMap } from "react-kakao-maps-sdk";
 import { activePopupAtom } from "../model/atoms";
 
 type Props = {
   onCenterChange: (center: { lat: number; lng: number }) => void;
+  purposeFilter: Set<string>;
 };
 
-export function CCTVMarkers({ onCenterChange }: Props) {
-  const cctvs = useFilteredCctv();
+export function CCTVMarkers({ onCenterChange, purposeFilter }: Props) {
+  const allCctvs = useFilteredCctv();
+  const cctvs = allCctvs.filter((c) => !purposeFilter.has(c.purpose));
   const searchCenter = useAtomValue(cctvSearchCenterAtom);
   const searchRadius = useAtomValue(cctvSearchRadiusAtom);
   const hoveredId = useAtomValue(hoveredCctvIdAtom);

@@ -22,8 +22,9 @@ export type BusRouteInfoRaw = {
 // };
 
 /** 노선정보조회 서비스 */
-export async function getRouteInfo() {
+export async function getRouteInfo(busRouteId: string) {
   // TODO: 실제 API 승인 전까지 임시 데이터 사용. 나중에 이 줄과 mock import를 삭제하세요.
+  console.log(busRouteId);
   return MOCK_ROUTE_INFO;
 
   // const url = "http://ws.bus.go.kr/api/rest/busRouteInfo/getRouteInfo";

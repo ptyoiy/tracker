@@ -1,18 +1,22 @@
 // src/features/map-view/ui/MapView.tsx
 "use client";
 
-import { cctvLoadingAtom } from "@/features/cctv-mapping/model/atoms";
+import {
+  allCctvAtom,
+  cctvLoadingAtom,
+} from "@/features/cctv-mapping/model/atoms";
 import { observationsAtom } from "@/features/observation-input/model/atoms";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
-import { useAtomValue } from "jotai";
-import { Check, Crosshair, Layers } from "lucide-react";
-import { useRef } from "react";
+import { useAtomValue, useSetAtom } from "jotai";
+import { Check, ChevronDown, Crosshair, Layers } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Map as KakaoMap } from "react-kakao-maps-sdk";
 import { useKakaoMapSdk } from "../lib/useKakaoMapSdk";
 import { useMapInteraction } from "../lib/useMapInteraction";
 import { useMapLayers } from "../lib/useMapLayers";
 import { useMapViewport } from "../lib/useMapViewport";
+import { allCctvForPurposeAtom } from "../model/atoms";
 import { CCTVMarkers } from "./CCTVMarker";
 import { IsochronePolygon } from "./IsoChronePolygon";
 import { ObservationMarker } from "./ObservationMarker";
@@ -23,6 +27,13 @@ export function MapView() {
   const observations = useAtomValue(observationsAtom);
   const isCctvLoading = useAtomValue(cctvLoadingAtom);
   const mapRef = useRef<kakao.maps.Map>(null);
+
+  // allCctvAtom → allCctvForPurposeAtom 동기화 (순환 의존 방지)
+  const allCctv = useAtomValue(allCctvAtom);
+  const setAllCctvForPurpose = useSetAtom(allCctvForPurposeAtom);
+  useEffect(() => {
+    setAllCctvForPurpose(allCctv);
+  }, [allCctv, setAllCctvForPurpose]);
 
   const { isLoaded } = useKakaoMapSdk(mapRef);
   const {
@@ -40,9 +51,15 @@ export function MapView() {
     toggleLayer,
     toggleLayerMenu,
     closeLayerMenu,
+    cctvPurposes,
+    cctvPurposeFilter,
+    toggleCctvPurpose,
+    toggleAllCctvPurposes,
   } = useMapLayers();
 
   const { handleMapClick } = useMapInteraction(panToWithOffset);
+
+  const [isCctvSubMenuOpen, setIsCctvSubMenuOpen] = useState(false);
 
   if (!isLoaded) {
     return (
@@ -55,6 +72,9 @@ export function MapView() {
       </div>
     );
   }
+
+  const allPurposesHidden =
+    cctvPurposeFilter.size > 0 && cctvPurposeFilter.size >= cctvPurposes.length;
 
   return (
     <div className="w-full h-full relative min-h-[500px]">
@@ -72,7 +92,7 @@ export function MapView() {
         </Button>
 
         {isLayerMenuOpen && (
-          <div className="bg-white rounded-lg shadow-xl border p-2 flex flex-col gap-1 min-w-[140px] animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="bg-white rounded-lg shadow-xl border p-2 flex flex-col gap-1 min-w-[160px] animate-in fade-in slide-in-from-top-2 duration-200">
             {[
               {
                 id: "observations" as const,
@@ -100,19 +120,89 @@ export function MapView() {
                 color: "text-orange-500",
               },
             ].map((layer) => (
-              <button
-                key={layer.id}
-                type="button"
-                className="flex items-center justify-between px-3 py-2 text-xs font-medium rounded-md hover:bg-gray-50 transition-colors w-full text-left"
-                onClick={() => {
-                  toggleLayer(layer.id);
-                }}
-              >
-                <span className={layer.color}>{layer.label}</span>
-                {mapLayers[layer.id] && (
-                  <Check className="w-3 h-3 text-blue-600" />
-                )}
-              </button>
+              <div key={layer.id}>
+                <button
+                  type="button"
+                  className="flex items-center justify-between px-3 py-2 text-xs font-medium rounded-md hover:bg-gray-50 transition-colors w-full text-left"
+                  onClick={() => {
+                    if (layer.id === "cctv") {
+                      toggleLayer(layer.id);
+                    } else {
+                      toggleLayer(layer.id);
+                    }
+                  }}
+                >
+                  <span className={`flex items-center gap-1.5 ${layer.color}`}>
+                    {layer.label}
+                    {layer.id === "cctv" && cctvPurposes.length > 0 && (
+                      <button
+                        type="button"
+                        className="p-0.5 rounded hover:bg-gray-200 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsCctvSubMenuOpen((prev) => !prev);
+                        }}
+                        aria-label="CCTV 목적별 필터 펼치기"
+                      >
+                        <ChevronDown
+                          className={`w-3 h-3 transition-transform duration-200 ${isCctvSubMenuOpen ? "rotate-180" : ""}`}
+                        />
+                      </button>
+                    )}
+                  </span>
+                  {mapLayers[layer.id] && (
+                    <Check className="w-3 h-3 text-blue-600" />
+                  )}
+                </button>
+
+                {/* CCTV 설치 목적별 서브메뉴 */}
+                {layer.id === "cctv" &&
+                  isCctvSubMenuOpen &&
+                  cctvPurposes.length > 0 && (
+                    <div className="ml-3 pl-2 border-l-2 border-green-200 mb-1 flex flex-col gap-0.5">
+                      {/* 전체 선택/해제 */}
+                      <button
+                        type="button"
+                        className="flex items-center justify-between px-2 py-1.5 text-[11px] font-semibold rounded hover:bg-gray-50 transition-colors w-full text-left text-gray-500"
+                        onClick={() => toggleAllCctvPurposes()}
+                      >
+                        <span>
+                          {allPurposesHidden ? "전체 표시" : "전체 숨기기"}
+                        </span>
+                        {!allPurposesHidden && (
+                          <Check className="w-2.5 h-2.5 text-blue-600" />
+                        )}
+                      </button>
+
+                      <div className="h-px bg-gray-100 my-0.5" />
+
+                      {cctvPurposes.map((purpose) => {
+                        const isHidden = cctvPurposeFilter.has(purpose);
+                        return (
+                          <button
+                            key={purpose}
+                            type="button"
+                            className="flex items-center justify-between px-2 py-1 text-[11px] rounded hover:bg-gray-50 transition-colors w-full text-left"
+                            onClick={() => toggleCctvPurpose(purpose)}
+                          >
+                            <span
+                              className={
+                                isHidden
+                                  ? "text-gray-400 line-through"
+                                  : "text-green-700"
+                              }
+                            >
+                              {purpose}
+                            </span>
+                            {!isHidden && (
+                              <Check className="w-2.5 h-2.5 text-green-600" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+              </div>
             ))}
           </div>
         )}
@@ -176,6 +266,7 @@ export function MapView() {
         {mapLayers.cctv && (
           <CCTVMarkers
             onCenterChange={(latlng) => panToWithOffset(latlng.lat, latlng.lng)}
+            purposeFilter={cctvPurposeFilter}
           />
         )}
         {mapLayers.transit && (
