@@ -1,5 +1,4 @@
-import ky from "ky";
-import { env } from "@/shared/config/env";
+import { MOCK_ARRIVALS_BY_UID } from "./mocks";
 
 export type BusArrivalRaw = {
   arrmsg1: string; // "3분 후"
@@ -14,36 +13,39 @@ export type BusArrivalRaw = {
   isFullFlag1: string; // 혼잡도 정보 (관련 필드 다수 존재, 일단 참고용)
 };
 
-type BusArrivalResponse = {
-  msgBody?: {
-    itemList?: BusArrivalRaw | BusArrivalRaw[];
-  };
-  msgHeader?: {
-    headerCd: string;
-    headerMsg: string;
-  };
-};
+// type BusArrivalResponse = {
+//   msgBody?: {
+//     itemList?: BusArrivalRaw | BusArrivalRaw[];
+//   };
+//   msgHeader?: {
+//     headerCd: string;
+//     headerMsg: string;
+//   };
+// };
 
 /* 정류소정보조회 서비스 */
-export async function getStationByUid(arsId: string) {
-  const url = "http://ws.bus.go.kr/api/rest/stationinfo/getStationByUid";
-  const searchParams = new URLSearchParams({
-    ServiceKey: env.DATA_GO_KR_API_KEY,
-    arsId,
-    resultType: "json",
-  });
+export async function getStationByUid(): Promise<BusArrivalRaw[]> {
+  // TODO: 실제 API 승인 전까지 임시 데이터 사용. 나중에 이 줄과 mock import를 삭제하세요.
+  return MOCK_ARRIVALS_BY_UID;
 
-  const res = await ky
-    .get(`${url}?${searchParams.toString()}`)
-    .json<BusArrivalResponse>();
+  // const url = "http://ws.bus.go.kr/api/rest/stationinfo/getStationByUid";
+  // const searchParams = new URLSearchParams({
+  //   ServiceKey: env.DATA_GO_KR_API_KEY,
+  //   arsId,
+  //   resultType: "json",
+  // });
 
-  if (res.msgHeader?.headerCd !== "0") {
-    console.error("getStationByUid API Error:", res.msgHeader);
-    return [];
-  }
+  // const res = await ky
+  //   .get(`${url}?${searchParams.toString()}`)
+  //   .json<BusArrivalResponse>();
 
-  const itemList = res.msgBody?.itemList;
-  if (!itemList) return [];
+  // if (res.msgHeader?.headerCd !== "0") {
+  //   console.error("getStationByUid API Error:", res.msgHeader);
+  //   return [];
+  // }
 
-  return Array.isArray(itemList) ? itemList : [itemList];
+  // const itemList = res.msgBody?.itemList;
+  // if (!itemList) return [];
+
+  // return Array.isArray(itemList) ? itemList : [itemList];
 }

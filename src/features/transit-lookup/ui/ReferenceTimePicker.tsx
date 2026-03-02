@@ -3,6 +3,14 @@ import { useAtom } from "jotai";
 import { Clock } from "lucide-react";
 import { transitReferenceTimeAtom } from "../model/atoms";
 
+function toLocalDatetimeInput(iso?: string) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const offset = d.getTimezoneOffset() * 60000;
+  return new Date(d.getTime() - offset).toISOString().slice(0, 16);
+}
+
 export function ReferenceTimePicker() {
   const [refTime, setRefTime] = useAtom(transitReferenceTimeAtom);
 
@@ -15,9 +23,7 @@ export function ReferenceTimePicker() {
   };
 
   // datetime-local 형식 (YYYY-MM-DDThh:mm)
-  const formattedVal = refTime
-    ? new Date(refTime).toISOString().slice(0, 16)
-    : "";
+  const formattedVal = toLocalDatetimeInput(refTime ?? undefined);
 
   return (
     <div className="flex items-center gap-2">

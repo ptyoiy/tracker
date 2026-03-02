@@ -15,6 +15,12 @@ import {
   type SubwayTimetableRaw,
 } from "@/shared/api/public-data/subway-timetable";
 import { NextResponse } from "next/server";
+import statInfoDataRaw from "../../../../public/data/statInfo.json";
+
+const statInfoData = statInfoDataRaw as Record<
+  string,
+  { subwayId: string; statnNm: string; lineName: string }
+>;
 
 export async function POST(req: Request) {
   try {
@@ -220,16 +226,17 @@ async function fetchSubwayData(
     } else {
       try {
         const arrivals = await getSubwayArrival(stationName);
-        const stationCode = arrivals[0]?.statnList
-          ?.split(",")
-          .map((s) => s.slice(-4));
-        for (const code of stationCode) {
-          if (code) {
+        const statnIds = arrivals[0]?.statnList?.split(",") || [];
+
+        for (const statnId of statnIds) {
+          if (statnId) {
+            const statData = statInfoData[statnId];
+            if (!statData) continue;
+
             const dayOfWeek = refDate.getDay();
             const weekTag = dayOfWeek === 0 ? "3" : dayOfWeek === 6 ? "2" : "1";
 
-            // 첫 2자리를 통해 노선번호 유추 (예: "0222" -> "2", "1075" -> "10")
-            const lineNm = parseInt(code.substring(0, 2), 10).toString();
+            const lineNm = statData.lineName;
             let fetchPromises: Promise<SubwayTimetableRaw[]>[];
             if (lineNm === "2" || lineNm === "2호선") {
               const l2: "2" | "2호선" = lineNm;
