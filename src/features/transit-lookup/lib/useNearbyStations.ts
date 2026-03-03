@@ -6,10 +6,7 @@ import { apiClient } from "@/shared/api/client";
 import { useQueries } from "@tanstack/react-query";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useEffect, useMemo } from "react";
-import {
-  type NearbyStationMarker,
-  nearbyStationsAtom,
-} from "../model/atoms";
+import { type NearbyStationMarker, nearbyStationsAtom } from "../model/atoms";
 import type { TransitNearbyResponse } from "../model/types";
 
 /**
@@ -32,11 +29,7 @@ export function useNearbyStations() {
 
   const queries = useQueries({
     queries: validObservations.map((obs) => ({
-      queryKey: [
-        "nearby-stations",
-        obs.lat.toFixed(4),
-        obs.lng.toFixed(4),
-      ],
+      queryKey: ["nearby-stations", obs.lat.toFixed(4), obs.lng.toFixed(4)],
       queryFn: async () => {
         const body = {
           lat: obs.lat,
@@ -59,7 +52,17 @@ export function useNearbyStations() {
     const markers: NearbyStationMarker[] = [];
     const seen = new Set<string>(); // 중복 방지
 
-    console.log("[DEBUG:useNearbyStations] queries:", queries.length, "개, 상태:", queries.map((q, i) => `[${i}] loading=${q.isLoading} error=${!!q.error} data=${!!q.data} busCount=${q.data?.bus.stations.length ?? '-'}`).join(', '));
+    console.log(
+      "[DEBUG:useNearbyStations] queries:",
+      queries.length,
+      "개, 상태:",
+      queries
+        .map(
+          (q, i) =>
+            `[${i}] loading=${q.isLoading} error=${!!q.error} data=${!!q.data} busCount=${q.data?.bus.stations.length ?? "-"}`,
+        )
+        .join(", "),
+    );
 
     for (let i = 0; i < queries.length; i++) {
       const result = queries[i];
@@ -68,7 +71,8 @@ export function useNearbyStations() {
       if (!result.data) continue;
       console.log(
         "[DEBUG:useNearbyStations] result.data:",
-        result.data.bus.stations);
+        result.data.bus.stations,
+      );
       // 버스 정류장
       for (const station of result.data.bus.stations) {
         const key = `bus-${station.stationId}`;

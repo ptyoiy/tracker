@@ -89,7 +89,9 @@ export async function POST(req: Request) {
   } catch (error: unknown) {
     console.error("bus-station-arrivals API Error:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal Server Error" },
+      {
+        error: error instanceof Error ? error.message : "Internal Server Error",
+      },
       { status: 500 },
     );
   }

@@ -2,7 +2,7 @@ import type {
   BusStationResult,
   SubwayLineInfo,
   SubwayStationResult,
-  TransitNearbyResponse
+  TransitNearbyResponse,
 } from "@/features/transit-lookup/model/types";
 import { getCategorySearch } from "@/shared/api/kakao/category-search";
 import { getStationByPos } from "@/shared/api/public-data/bus-station";
