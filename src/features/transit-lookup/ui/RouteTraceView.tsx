@@ -5,7 +5,10 @@ import { apiClient } from "@/shared/api/client";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Repeat } from "lucide-react";
+import { useSetAtom } from "jotai";
+import { ArrowLeft, MapPinned, Repeat } from "lucide-react";
+import { useEffect, useState } from "react";
+import { selectedRoutePathAtom } from "../model/atoms";
 import type { RouteTraceRequest, RouteTraceResponse } from "../model/types";
 
 type Props = {
@@ -25,6 +28,9 @@ export function RouteTraceView({
   referenceTime,
   onClose,
 }: Props) {
+  const setRoutePath = useSetAtom(selectedRoutePathAtom);
+  const [keepRoute, setKeepRoute] = useState(false);
+
   const { data, isLoading, error } = useQuery({
     queryKey: [
       "transit-trace",
@@ -46,6 +52,38 @@ export function RouteTraceView({
     },
   });
 
+  // 데이터 로드 시 지도에 경로 + 정류소 정보 표시
+  useEffect(() => {
+    if (data && data.stops.length > 0) {
+      const validStops = data.stops.filter((s) => s.lat !== 0 && s.lng !== 0);
+      const validPath = validStops.map((s) => ({ lat: s.lat, lng: s.lng }));
+      if (validPath.length >= 2) {
+        setRoutePath({
+          routeName: routeName,
+          type,
+          path: validPath,
+          stops: validStops.map((s, idx) => ({
+            lat: s.lat,
+            lng: s.lng,
+            stationName: s.stationName,
+            cumulativeMinutes: s.cumulativeMinutes,
+            isTransfer: s.isTransfer,
+            isFirst: idx === 0,
+          })),
+        });
+      }
+    }
+    // 언마운트 시 keepRoute가 아니면 경로 지우기
+    return () => {
+      if (!keepRoute) setRoutePath(null);
+    };
+  }, [data, routeName, type, setRoutePath, keepRoute]);
+
+  const handleClose = () => {
+    if (!keepRoute) setRoutePath(null);
+    onClose();
+  };
+
   return (
     <div className="flex flex-col gap-2">
       {/* 헤더 */}
@@ -54,11 +92,11 @@ export function RouteTraceView({
           variant="ghost"
           size="icon"
           className="w-7 h-7 shrink-0"
-          onClick={onClose}
+          onClick={handleClose}
         >
           <ArrowLeft className="w-4 h-4" />
         </Button>
-        <div className="flex flex-col gap-0.5 min-w-0">
+        <div className="flex flex-col gap-0.5 min-w-0 flex-1">
           <span className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
             <span>{type === "bus" ? "🚌" : "🚇"}</span>
             <span className="truncate">{routeName}</span>
@@ -69,6 +107,25 @@ export function RouteTraceView({
             </span>
           )}
         </div>
+        <Button
+          variant={keepRoute ? "default" : "outline"}
+          size="sm"
+          className={cn(
+            "h-7 text-[10px] px-2 shrink-0 gap-1",
+            keepRoute
+              ? "bg-blue-500 hover:bg-blue-600 text-white"
+              : "text-gray-500 hover:text-blue-600",
+          )}
+          onClick={() => setKeepRoute((prev) => !prev)}
+          title={
+            keepRoute
+              ? "경로 표시를 해제합니다"
+              : "뒤로 가도 지도에 경로를 유지합니다"
+          }
+        >
+          <MapPinned className="w-3 h-3" />
+          {keepRoute ? "경로 고정" : "경로 고정"}
+        </Button>
       </div>
 
       {/* 로딩 */}

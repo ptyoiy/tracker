@@ -1,12 +1,17 @@
 // src/features/transit-lookup/ui/BusStationCard.tsx
 "use client";
 
+import { apiClient } from "@/shared/api/client";
 import { Badge } from "@/shared/ui/badge";
+import { useQuery } from "@tanstack/react-query";
 import { useAtomValue } from "jotai";
-import { MapPin } from "lucide-react";
+import { Loader2, MapPin } from "lucide-react";
 import { useState } from "react";
-import { transitReferenceTimeAtom } from "../model/atoms";
-import type { BusStationResult } from "../model/types";
+import {
+  transitReferenceTimeAtom,
+  transitSelectedModeAtom,
+} from "../model/atoms";
+import type { BusRouteInfo, BusStationResult } from "../model/types";
 import { RouteTraceView } from "./RouteTraceView";
 
 export function BusStationCard({ station }: { station: BusStationResult }) {
@@ -15,7 +20,38 @@ export function BusStationCard({ station }: { station: BusStationResult }) {
     routeName: string;
   } | null>(null);
   const refTime = useAtomValue(transitReferenceTimeAtom);
+  const selectedMode = useAtomValue(transitSelectedModeAtom);
   const referenceTime = refTime || new Date().toISOString();
+
+  // 도착 정보 lazy-load: 카드가 표시될 때 개별 조회
+  const { data: arrivalData, isLoading: arrivalLoading } = useQuery({
+    queryKey: [
+      "bus-station-arrivals",
+      station.arsId,
+      selectedMode,
+      referenceTime,
+    ],
+    queryFn: async () => {
+      const res = await apiClient
+        .post("bus-station-arrivals", {
+          json: {
+            arsId: station.arsId,
+            mode: selectedMode === "auto" ? undefined : selectedMode,
+            referenceTime,
+          },
+        })
+        .json<{ routes: BusRouteInfo[] }>();
+      return res.routes;
+    },
+    // 이미 routes 데이터가 있으면 스킵 (직접 조회 결과)
+    enabled: station.routes.length === 0,
+    staleTime: 30000,
+    retry: 1,
+  });
+
+  // 기존 routes가 있으면 사용, 없으면 lazy-load 결과 사용
+  const routes =
+    station.routes.length > 0 ? station.routes : (arrivalData ?? []);
 
   if (traceRoute) {
     return (
@@ -33,12 +69,17 @@ export function BusStationCard({ station }: { station: BusStationResult }) {
   return (
     <div className="flex flex-col gap-2">
       <div className="bg-gray-50 border border-gray-100 rounded-lg p-2 flex flex-col gap-1">
-        {station.routes.length === 0 ? (
+        {arrivalLoading ? (
+          <div className="flex items-center justify-center py-4 text-gray-400 gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span className="text-xs">도착 정보 조회 중...</span>
+          </div>
+        ) : routes.length === 0 ? (
           <div className="text-xs text-gray-400 py-2 text-center">
             도착 정보 없음
           </div>
         ) : (
-          station.routes.map((route, idx) => (
+          routes.map((route, idx) => (
             <div
               key={`${route.routeId}-${route.destination}-${idx}`}
               className="flex items-center justify-between py-1.5 border-b border-gray-100 last:border-0"

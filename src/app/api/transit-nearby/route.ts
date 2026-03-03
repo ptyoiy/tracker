@@ -1,13 +1,10 @@
 import type {
-  BusRouteInfo,
   BusStationResult,
   SubwayLineInfo,
   SubwayStationResult,
-  TransitNearbyResponse,
+  TransitNearbyResponse
 } from "@/features/transit-lookup/model/types";
 import { getCategorySearch } from "@/shared/api/kakao/category-search";
-import { getStationByUid } from "@/shared/api/public-data/bus-arrival";
-import { getRouteInfo } from "@/shared/api/public-data/bus-route-info";
 import { getStationByPos } from "@/shared/api/public-data/bus-station";
 import { getSubwayArrival } from "@/shared/api/public-data/subway-arrival";
 import {
@@ -105,88 +102,22 @@ async function fetchBusData(
   lat: number,
   lng: number,
   radius: number,
-  mode: "realtime" | "timetable",
-  refDate: Date,
+  _mode: "realtime" | "timetable",
+  _refDate: Date,
 ): Promise<BusStationResult[]> {
+  // 정류장 위치만 조회 (도착 정보는 클라이언트에서 개별 요청)
   const stations = await getStationByPos(lng, lat, radius);
   if (!stations || stations.length === 0) return [];
 
-  const topStations = stations;
-  const results: BusStationResult[] = [];
-
-  for (const st of topStations) {
-    try {
-      const distance = parseInt(st.dist || "0", 10);
-      const arrivals = await getStationByUid(st.arsId);
-
-      const routes: BusRouteInfo[] = [];
-
-      if (mode === "realtime") {
-        for (const arr of arrivals) {
-          routes.push({
-            routeName: arr.rtNm,
-            routeId: arr.busRouteId,
-            routeType: arr.routeType || "이용",
-            destination: arr.adirection,
-            mode: "realtime",
-            arrival1: arr.arrmsg1,
-            arrival2: arr.arrmsg2 !== "운행종료" ? arr.arrmsg2 : undefined,
-            congestion: arr.isFullFlag1 === "1" ? "혼잡" : undefined,
-          });
-        }
-      } else {
-        // 시간표 모드
-        for (const arr of arrivals) {
-          try {
-            const info = await getRouteInfo(arr.busRouteId);
-            if (info) {
-              const refH = refDate.getHours().toString().padStart(2, "0");
-              const refM = refDate.getMinutes().toString().padStart(2, "0");
-              const refTimeStr = `${refH}${refM}`;
-
-              const firstTm = info.firstBusTm || "0400";
-              const lastTm = info.lastBusTm || "2300";
-
-              let operating = false;
-              if (firstTm <= lastTm) {
-                operating = refTimeStr >= firstTm && refTimeStr <= lastTm;
-              } else {
-                operating = refTimeStr >= firstTm || refTimeStr <= lastTm;
-              }
-
-              routes.push({
-                routeName: arr.rtNm,
-                routeId: arr.busRouteId,
-                routeType: info.routeType || "이용",
-                destination: info.edStationNm || arr.adirection,
-                mode: "timetable",
-                firstBus: `${firstTm.slice(0, 2)}:${firstTm.slice(2, 4)}`,
-                lastBus: `${lastTm.slice(0, 2)}:${lastTm.slice(2, 4)}`,
-                interval: info.term ? `${info.term}분` : "정보없음",
-                operating,
-              });
-            }
-          } catch (e) {
-            console.error("Bus Route Info fetch fail", e);
-          }
-        }
-      }
-
-      results.push({
-        stationId: st.stationId,
-        arsId: st.arsId,
-        stationName: st.stationNm,
-        distance,
-        lat: parseFloat(st.tmY),
-        lng: parseFloat(st.tmX),
-        routes,
-      });
-    } catch (e) {
-      console.error("Bus station processing error", e);
-    }
-  }
-
-  return results;
+  return stations.map((st) => ({
+    stationId: st.stationId,
+    arsId: st.arsId,
+    stationName: st.stationNm,
+    distance: parseInt(st.dist || "0", 10),
+    lat: parseFloat(st.gpsY),
+    lng: parseFloat(st.gpsX),
+    routes: [], // 도착 정보는 개별 정류장 펼칠 때 lazy-load
+  }));
 }
 
 // ---------------- 지하철 ----------------

@@ -20,3 +20,35 @@ export const transitResultAtom = atom<TransitNearbyResponse | null>(null);
 // 로딩 및 에러 상태
 export const transitLoadingAtom = atom<boolean>(false);
 export const transitErrorAtom = atom<string | null>(null);
+
+// 관측지점 기반 인근 정류장 (마커 표시 전용)
+export type NearbyStationMarker = {
+  lat: number;
+  lng: number;
+  name: string;
+  type: "bus" | "subway";
+  stationId: string;
+  distance: number;
+  observationIndex: number;
+};
+
+export const nearbyStationsAtom = atom<NearbyStationMarker[]>([]);
+
+// 선택된 노선의 경로 좌표 (지도 폴리라인 표시용)
+export type RoutePathStop = {
+  lat: number;
+  lng: number;
+  stationName: string;
+  cumulativeMinutes: number;
+  isTransfer: boolean;
+  isFirst: boolean;
+};
+
+export type SelectedRoutePath = {
+  routeName: string;
+  type: "bus" | "subway";
+  path: { lat: number; lng: number }[];
+  stops: RoutePathStop[];
+} | null;
+
+export const selectedRoutePathAtom = atom<SelectedRoutePath>(null);

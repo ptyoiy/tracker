@@ -10,6 +10,7 @@ import { ObservationForm } from "@/features/observation-input/ui/ObservationForm
 import { useSelectedRoutes } from "@/features/route-analysis/lib/useSelectedRoutes";
 import { analysisResultAtom } from "@/features/route-analysis/model/atoms";
 import { RouteListPanel } from "@/features/route-analysis/ui/RouteAnalysisPanel";
+import { useNearbyStations } from "@/features/transit-lookup/lib/useNearbyStations";
 import { TransitNearbyPanel } from "@/features/transit-lookup/ui/TransitNearbyPanel";
 import { KakaoLoader } from "@/shared/lib/KakaoLoader";
 import { cn } from "@/shared/lib/utils";
@@ -75,6 +76,7 @@ export default function Home() {
 
   useLoadCctvOnce();
   useComputeRouteCctvCount();
+  useNearbyStations();
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden relative bg-white">

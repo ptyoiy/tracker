@@ -30,7 +30,7 @@ export function TransitNearbyPanel() {
   const observations = useAtomValue(observationsAtom);
   const viewport = useAtomValue(viewportAtom);
 
-  const { data, isLoading, error, refetch } = useTransitNearby();
+  const { data, isLoading, isFetching, error, refetch } = useTransitNearby();
 
   const handleSearchAtCenter = () => {
     if (viewport?.visualCenter) {
@@ -118,7 +118,7 @@ export function TransitNearbyPanel() {
             title="새로고침"
           >
             <RefreshCw
-              className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
+              className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`}
             />
           </Button>
         </div>
@@ -130,10 +130,10 @@ export function TransitNearbyPanel() {
           <div className="flex flex-col items-center justify-center py-12 text-center text-gray-400">
             <MapPin className="w-8 h-8 mb-2 opacity-50 text-gray-300" />
             <p className="text-sm">
-              위치를 선택하여 대중교통 현황을 확인하세요.
+              위치를 선택하면 해당 지점의 대중교통 현황을 확인합니다.
             </p>
           </div>
-        ) : isLoading ? (
+        ) : isLoading && !data ? (
           <div className="flex flex-col items-center justify-center py-12 text-center text-gray-500">
             <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-4" />
             <p className="text-sm font-medium">
@@ -143,7 +143,7 @@ export function TransitNearbyPanel() {
               경로와 시간표를 분석 중입니다.
             </p>
           </div>
-        ) : error ? (
+        ) : error && !data ? (
           <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
             <AlertCircle className="w-8 h-8 text-red-500 mb-2 opacity-80" />
             <p className="text-sm text-red-600 font-medium whitespace-pre-wrap">
@@ -156,11 +156,19 @@ export function TransitNearbyPanel() {
         ) : data ? (
           <div className="pb-16 space-y-6">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
-                {data.mode === "realtime"
-                  ? "실시간 도착 정보"
-                  : "시간표 연동 정보"}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                  {data.mode === "realtime"
+                    ? "실시간 도착 정보"
+                    : "시간표 연동 정보"}
+                </span>
+                {isFetching && (
+                  <span className="text-[10px] text-blue-500 flex items-center gap-1">
+                    <div className="w-2 h-2 border border-blue-500 border-t-transparent rounded-full animate-spin" />
+                    갱신 중
+                  </span>
+                )}
+              </div>
               <span className="text-[10px] text-gray-500">
                 기준:{" "}
                 {new Date(data.referenceTime).toLocaleTimeString("ko-KR", {
