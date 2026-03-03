@@ -1,7 +1,5 @@
-import { MOCK_STATIONS_BY_ROUTE } from "./mocks";
-
-// import { env } from "@/shared/config/env";
-// import ky from "ky";
+import { env } from "@/shared/config/env";
+import ky from "ky";
 
 export type BusRouteStationRaw = {
   stationNo: string; // 정류장 번호
@@ -19,41 +17,37 @@ export type BusRouteStationRaw = {
   transYn: string; // 환승정류장 여부
 };
 
-// type BusRouteStationResponse = {
-//   msgBody?: {
-//     itemList?: BusRouteStationRaw | BusRouteStationRaw[];
-//   };
-//   msgHeader?: {
-//     headerCd: string;
-//     headerMsg: string;
-//   };
-// };
+type BusRouteStationResponse = {
+  msgBody?: {
+    itemList?: BusRouteStationRaw | BusRouteStationRaw[];
+  };
+  msgHeader?: {
+    headerCd: string;
+    headerMsg: string;
+  };
+};
 
 /** 노선별 경유 정류장 목록 조회 */
 export async function getStationsByRoute(
   busRouteId: string,
 ): Promise<BusRouteStationRaw[]> {
-  // TODO: 실제 API 승인 전까지 임시 데이터 사용
-  console.log("getStationsByRoute called with:", busRouteId);
-  return MOCK_STATIONS_BY_ROUTE;
+  const url = "http://ws.bus.go.kr/api/rest/busRouteInfo/getStaionByRoute";
+  const searchParams = new URLSearchParams({
+    serviceKey: env.DATA_GO_KR_API_SUBWAY_TIMETABLE_KEY,
+    busRouteId,
+    resultType: "json",
+  });
 
-  // const url = "http://ws.bus.go.kr/api/rest/busRouteInfo/getStaionByRoute";
-  // const searchParams = new URLSearchParams({
-  //   serviceKey: env.DATA_GO_KR_API_SUBWAY_TIMETABLE_KEY,
-  //   busRouteId,
-  //   resultType: "json",
-  // });
+  const res = await ky
+    .get(`${url}?${searchParams.toString()}`)
+    .json<BusRouteStationResponse>();
 
-  // const res = await ky
-  //   .get(`${url}?${searchParams.toString()}`)
-  //   .json<BusRouteStationResponse>();
+  if (res.msgHeader?.headerCd !== "0") {
+    console.error("getStationsByRoute API Error:", res.msgHeader);
+    return [];
+  }
 
-  // if (res.msgHeader?.headerCd !== "0") {
-  //   console.error("getStationsByRoute API Error:", res.msgHeader);
-  //   return [];
-  // }
-
-  // const itemList = res.msgBody?.itemList;
-  // if (!itemList) return [];
-  // return Array.isArray(itemList) ? itemList : [itemList];
+  const itemList = res.msgBody?.itemList;
+  if (!itemList) return [];
+  return Array.isArray(itemList) ? itemList : [itemList];
 }
