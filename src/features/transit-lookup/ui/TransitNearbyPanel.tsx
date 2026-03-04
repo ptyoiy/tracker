@@ -76,7 +76,6 @@ export function TransitNearbyPanel() {
       setMapCenterCommand({
         lat: targetStation.lat,
         lng: targetStation.lng,
-        yOffset: -150, // 하단 Drawer 높이를 고려해 지도를 약간 위로 치우치게 이동
       });
     }
   };

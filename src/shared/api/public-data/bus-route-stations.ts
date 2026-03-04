@@ -5,7 +5,7 @@ export type BusRouteStationRaw = {
   stationNo: string; // 정류장 번호
   stationNm: string; // 정류장 이름
   arsId: string; // 정류장 고유번호
-  stationId: string;
+  station: string;
   seq: string; // 순번
   section: string; // 구간
   gpsX: string; // 경도

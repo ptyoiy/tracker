@@ -61,9 +61,9 @@ async function traceBusRoute(
 ): Promise<RouteTraceResponse> {
   const allStations = await getStationsByRoute(busRouteId);
 
-  // 승차 정류장의 seq 찾기 (stationId → arsId → stationNm 순서로 fallback)
+  // 승차 정류장의 seq 찾기 (station → arsId → stationNm 순서로 fallback)
   let boardingIdx = allStations.findIndex(
-    (s) => s.stationId === boardingStationId || s.arsId === boardingStationId,
+    (s) => s.station === boardingStationId || s.arsId === boardingStationId,
   );
 
   // stationId/arsId 매칭 실패 시 stationNm으로 재시도
@@ -83,7 +83,7 @@ async function traceBusRoute(
   const stops: TraceStop[] = stationsAfter.map((st, idx) => ({
     seq: idx + 1,
     stationName: st.stationNm,
-    stationId: st.stationId,
+    stationId: st.station,
     lat: parseFloat(st.gpsY),
     lng: parseFloat(st.gpsX),
     cumulativeMinutes: Math.round(idx * AVG_MINUTES_PER_STOP),

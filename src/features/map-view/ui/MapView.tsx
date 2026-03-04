@@ -53,7 +53,7 @@ export function MapView() {
         mapCenterCommand.lat,
         mapCenterCommand.lng,
         0,
-        mapCenterCommand.yOffset || 0,
+        mapCenterCommand.yOffset,
       );
     }
   }, [mapCenterCommand, panToWithOffset]);
