@@ -6,10 +6,11 @@ import {
   cctvSearchRadiusAtom,
   hoveredCctvIdAtom,
 } from "@/features/cctv-mapping/model/atoms";
+import { useSelectedRoutes } from "@/features/route-analysis/lib/useSelectedRoutes";
 import {
-  selectedRoutePathAtom,
-  transitReferenceTimeAtom,
-} from "@/features/transit-lookup/model/atoms";
+  analysisResultAtom,
+  lastAnalysisParamsAtom,
+} from "@/features/route-analysis/model/atoms";
 import { getDistanceKm } from "@/shared/lib/geo/distance";
 import { cn } from "@/shared/lib/utils";
 import { Badge } from "@/shared/ui/badge";
@@ -17,6 +18,7 @@ import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { useAtom, useAtomValue } from "jotai";
 import { Camera, Info, MapPinned, ShieldCheck, Target, X } from "lucide-react";
+import { useMemo } from "react";
 import { Circle, CustomOverlayMap, useMap } from "react-kakao-maps-sdk";
 import { activePopupAtom } from "../model/atoms";
 
@@ -32,9 +34,23 @@ export function CCTVMarkers({ onCenterChange, purposeFilter }: Props) {
   const searchRadius = useAtomValue(cctvSearchRadiusAtom);
   const hoveredId = useAtomValue(hoveredCctvIdAtom);
   const [activePopup, setActivePopup] = useAtom(activePopupAtom);
-  const selectedRoutePath = useAtomValue(selectedRoutePathAtom);
-  const transitRefTime = useAtomValue(transitReferenceTimeAtom);
+  const selectedRoutes = useSelectedRoutes();
+  const analysisResult = useAtomValue(analysisResultAtom);
+  const lastParams = useAtomValue(lastAnalysisParamsAtom);
   const map = useMap();
+
+  // 경로분석 탭에서 선택된 첫 번째 경로 (표시용)
+  const activeRoute =
+    selectedRoutes.length > 0 && !analysisResult.stale
+      ? selectedRoutes[0]
+      : null;
+
+  // 경로 시작 시각: 관측지점의 첫 번째 timestamp
+  const routeStartTime = useMemo(() => {
+    if (!activeRoute || !lastParams?.observations.length) return null;
+    const firstObs = lastParams.observations[0];
+    return firstObs.timestamp ? new Date(firstObs.timestamp) : null;
+  }, [activeRoute, lastParams]);
 
   const selectedId = activePopup?.type === "cctv" ? activePopup.id : null;
   const setSelectedId = (
@@ -88,32 +104,50 @@ export function CCTVMarkers({ onCenterChange, purposeFilter }: Props) {
     return mainPart;
   };
 
-  // CCTV 위치와 대중교통 경로를 비교하여 예상 도달 시각(HH:mm)을 리턴하는 함수
+  // CCTV 위치와 경로분석 결과를 비교하여 예상 도달 시각(HH:mm)을 리턴하는 함수
   const getEstimatedArrivalTime = (cctvLat: number, cctvLng: number) => {
-    if (
-      !selectedRoutePath ||
-      selectedRoutePath.stops.length < 2 ||
-      !transitRefTime
-    )
-      return null;
+    if (!activeRoute || !routeStartTime) return null;
 
-    const stops = selectedRoutePath.stops;
+    // 모든 legs의 polyline 포인트를 누적 시간과 함께 평탄화
+    const points: { lat: number; lng: number; cumulativeSec: number }[] = [];
+    let cumulativeSec = 0;
+
+    for (const leg of activeRoute.legs) {
+      if (leg.polyline.length === 0) continue;
+
+      // leg 내에서 polyline 구간별 거리를 구해 비례 분배
+      const segDistances: number[] = [];
+      let legTotalDist = 0;
+      for (let i = 0; i < leg.polyline.length - 1; i++) {
+        const d = getDistanceKm(leg.polyline[i], leg.polyline[i + 1]);
+        segDistances.push(d);
+        legTotalDist += d;
+      }
+
+      // 첫 포인트
+      if (points.length === 0) {
+        points.push({ ...leg.polyline[0], cumulativeSec });
+      }
+
+      // 나머지 포인트 (거리 비례로 시간 분배)
+      for (let i = 0; i < segDistances.length; i++) {
+        const ratio = legTotalDist > 0 ? segDistances[i] / legTotalDist : 0;
+        cumulativeSec += leg.durationSeconds * ratio;
+        points.push({ ...leg.polyline[i + 1], cumulativeSec });
+      }
+    }
+
+    if (points.length < 2) return null;
+
+    // CCTV와 가장 가까운 선분 찾기
     let minDistance = Number.MAX_VALUE;
     let closestSegIdx = 0;
 
-    // CCTV와 가장 가까운 (정류소A -> 정류소B) 선분을 찾음
-    for (let i = 0; i < stops.length - 1; i++) {
-      const s1 = stops[i];
-      const s2 = stops[i + 1];
-
-      // 약식 거리: CCTV와 두 정류소 간 평균 거리 사용
-      const dist1 = getDistanceKm(
-        { lat: cctvLat, lng: cctvLng },
-        { lat: s1.lat, lng: s1.lng },
-      );
+    for (let i = 0; i < points.length - 1; i++) {
+      const dist1 = getDistanceKm({ lat: cctvLat, lng: cctvLng }, points[i]);
       const dist2 = getDistanceKm(
         { lat: cctvLat, lng: cctvLng },
-        { lat: s2.lat, lng: s2.lng },
+        points[i + 1],
       );
       const avgDist = (dist1 + dist2) / 2;
 
@@ -123,34 +157,23 @@ export function CCTVMarkers({ onCenterChange, purposeFilter }: Props) {
       }
     }
 
-    const s1 = stops[closestSegIdx];
-    const s2 = stops[closestSegIdx + 1];
+    const p1 = points[closestSegIdx];
+    const p2 = points[closestSegIdx + 1];
 
-    const distFromS1 = getDistanceKm(
-      { lat: cctvLat, lng: cctvLng },
-      { lat: s1.lat, lng: s1.lng },
+    const distFromP1 = getDistanceKm({ lat: cctvLat, lng: cctvLng }, p1);
+    const distFromP2 = getDistanceKm({ lat: cctvLat, lng: cctvLng }, p2);
+    const totalDist = distFromP1 + distFromP2;
+    const ratio = totalDist > 0 ? distFromP1 / totalDist : 0;
+
+    const timeDiffSec = p2.cumulativeSec - p1.cumulativeSec;
+    const estimatedSec = p1.cumulativeSec + timeDiffSec * ratio;
+
+    // 경로 시작 시각에 더하기
+    const arrivalTime = new Date(
+      routeStartTime.getTime() + estimatedSec * 1000,
     );
-    const distFromS2 = getDistanceKm(
-      { lat: cctvLat, lng: cctvLng },
-      { lat: s2.lat, lng: s2.lng },
-    );
 
-    // 두 정류소 간 거리가 너무 멀거나 0일 경우의 예외 처리
-    const totalDist = distFromS1 + distFromS2;
-    const ratio = totalDist > 0 ? distFromS1 / totalDist : 0;
-
-    // s1 ~ s2 사이의 누적 시간(분) 차이
-    const timeDiff = s2.cumulativeMinutes - s1.cumulativeMinutes;
-
-    // 비율만큼 시간을 더해줌
-    const estimatedExtraMinutes = timeDiff * ratio;
-    const totalCumulativeMinutes = s1.cumulativeMinutes + estimatedExtraMinutes;
-
-    // 기준 시각에 더하기
-    const baseTime = new Date(transitRefTime);
-    baseTime.setMinutes(baseTime.getMinutes() + totalCumulativeMinutes);
-
-    return baseTime.toLocaleTimeString("ko-KR", {
+    return arrivalTime.toLocaleTimeString("ko-KR", {
       hour: "2-digit",
       minute: "2-digit",
     });
@@ -199,8 +222,8 @@ export function CCTVMarkers({ onCenterChange, purposeFilter }: Props) {
                   });
                 }}
               >
-                {/* 예상 도착 시간 말풍선 (경로 존재 시) */}
-                {selectedRoutePath && transitRefTime && (
+                {/* 예상 도착 시간 말풍선 (경로분석 결과 존재 시) */}
+                {activeRoute && routeStartTime && (
                   <div className="absolute -top-7 whitespace-nowrap bg-blue-600/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm scale-90 origin-bottom group-hover:scale-100 transition-transform">
                     {getEstimatedArrivalTime(c.lat, c.lng)}
                     {/* 말풍선 꼬리 */}
