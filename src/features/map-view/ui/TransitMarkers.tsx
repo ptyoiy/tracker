@@ -255,8 +255,8 @@ export function TransitMarkers({
           </CustomOverlayMap>
         ))}
 
-      {/* 팝업 오버레이 (경로 표시 중 아닐 때만) */}
-      {!hideOtherMarkers && popupStation && popupType && (
+      {/* 팝업 오버레이 (마커는 숨겨도 팝업은 유지) */}
+      {popupStation && popupType && (
         <CustomOverlayMap
           position={{
             lat: popupStation.lat,

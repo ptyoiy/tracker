@@ -1,7 +1,10 @@
 // src/features/transit-lookup/ui/TransitNearbyPanel.tsx
 "use client";
 
-import { viewportAtom } from "@/features/map-view/model/atoms";
+import {
+  mapCenterCommandAtom,
+  viewportAtom,
+} from "@/features/map-view/model/atoms";
 import { observationsAtom } from "@/features/observation-input/model/atoms";
 import {
   Accordion,
@@ -10,7 +13,7 @@ import {
   AccordionTrigger,
 } from "@/shared/ui/accordion";
 import { Button } from "@/shared/ui/button";
-import { useAtom, useAtomValue } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { AlertCircle, Crosshair, MapPin, RefreshCw } from "lucide-react";
 import { useTransitNearby } from "../lib/useTransitNearby";
 import {
@@ -29,6 +32,7 @@ export function TransitNearbyPanel() {
   const [, setMode] = useAtom(transitSelectedModeAtom);
   const observations = useAtomValue(observationsAtom);
   const viewport = useAtomValue(viewportAtom);
+  const setMapCenterCommand = useSetAtom(mapCenterCommandAtom);
 
   const { data, isLoading, isFetching, error, refetch } = useTransitNearby();
 
@@ -53,6 +57,28 @@ export function TransitNearbyPanel() {
     setRefTime(new Date(obs.timestamp).toISOString());
     // 모드는 자동 판별되도록 auto로
     setMode("auto");
+  };
+
+  const handleAccordionChange = (value: string) => {
+    if (!value || !data) return;
+
+    // value 형식: "bus-{id}" 또는 "subway-{id}"
+    const [type, id] = value.split("-");
+    let targetStation: { lat: number; lng: number } | undefined;
+
+    if (type === "bus") {
+      targetStation = data.bus.stations.find((s) => s.stationId === id);
+    } else if (type === "subway") {
+      targetStation = data.subway.stations.find((s) => s.stationCode === id);
+    }
+
+    if (targetStation) {
+      setMapCenterCommand({
+        lat: targetStation.lat,
+        lng: targetStation.lng,
+        yOffset: -150, // 하단 Drawer 높이를 고려해 지도를 약간 위로 치우치게 이동
+      });
+    }
   };
 
   return (
@@ -191,7 +217,12 @@ export function TransitNearbyPanel() {
                   주변에 조회된 버스 정류소가 없습니다.
                 </div>
               ) : (
-                <Accordion type="single" collapsible className="space-y-1">
+                <Accordion
+                  type="single"
+                  collapsible
+                  className="space-y-1"
+                  onValueChange={handleAccordionChange}
+                >
                   {data.bus.stations.map((station) => (
                     <AccordionItem
                       key={station.stationId}
@@ -205,9 +236,6 @@ export function TransitNearbyPanel() {
                           </span>
                           <span className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
                             {station.distance}m
-                          </span>
-                          <span className="text-[10px] text-blue-600 ml-auto">
-                            {station.routes.length}개 노선
                           </span>
                         </div>
                       </AccordionTrigger>
@@ -233,7 +261,12 @@ export function TransitNearbyPanel() {
                   주변에 조회된 지하철역이 없습니다.
                 </div>
               ) : (
-                <Accordion type="single" collapsible className="space-y-1">
+                <Accordion
+                  type="single"
+                  collapsible
+                  className="space-y-1"
+                  onValueChange={handleAccordionChange}
+                >
                   {data.subway.stations.map((station) => (
                     <AccordionItem
                       key={station.stationCode}

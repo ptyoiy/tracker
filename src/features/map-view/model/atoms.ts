@@ -72,3 +72,10 @@ export const cctvPurposeFilterAtom = atom(new Set<string>());
 
 // 선택 목록에서 Hover 중인 경로 ID (지도 강조용)
 export const hoveredRouteIdAtom = atom<string | null>(null);
+
+// 외부 컴포넌트에서 지도 PanTo 이벤트를 발생시키기 위한 명령용 Atom
+export const mapCenterCommandAtom = atom<{
+  lat: number;
+  lng: number;
+  yOffset?: number;
+} | null>(null);

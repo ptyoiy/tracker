@@ -1,6 +1,9 @@
 // src/features/map-view/lib/useMapViewport.ts
 "use client";
 
+import { observationsAtom } from "@/features/observation-input/model/atoms";
+import { DEFAULT_CENTER } from "@/shared/config/constant";
+import { bottomSheetSnapAtom } from "@/store/atoms";
 import { useAtomValue, useSetAtom } from "jotai";
 import {
   type RefObject,
@@ -9,9 +12,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { observationsAtom } from "@/features/observation-input/model/atoms";
-import { DEFAULT_CENTER } from "@/shared/config/constant";
-import { bottomSheetSnapAtom } from "@/store/atoms";
 import { viewportAtom } from "../model/atoms";
 
 export function useMapViewport(mapRef: RefObject<kakao.maps.Map | null>) {
@@ -23,21 +23,26 @@ export function useMapViewport(mapRef: RefObject<kakao.maps.Map | null>) {
   const [mapLevel, setMapLevel] = useState(7);
 
   const panToWithOffset = useCallback(
-    (lat: number, lng: number) => {
+    (lat: number, lng: number, _z?: number, yOffsetOverride?: number) => {
       const map = mapRef.current;
       if (!map) return;
 
       const targetLatLng = new kakao.maps.LatLng(lat, lng);
 
-      let offsetRatio = 0;
-      if (snap === 0.5) offsetRatio = 0.25;
-      else if (snap === 0.9) offsetRatio = 0.45;
+      let offsetPixel = 0;
+      if (yOffsetOverride !== undefined) {
+        offsetPixel = yOffsetOverride;
+      } else {
+        let offsetRatio = 0;
+        if (snap === 0.5) offsetRatio = 0.25;
+        else if (snap === 0.9) offsetRatio = 0.45;
+        offsetPixel = map.getNode().offsetHeight * offsetRatio;
+      }
 
-      if (offsetRatio === 0) {
+      if (offsetPixel === 0) {
         map.setCenter(targetLatLng);
       } else {
         const projection = map.getProjection();
-        const offsetPixel = map.getNode().offsetHeight * offsetRatio;
 
         // 1. 타겟 좌표를 픽셀 평면상의 포인트로 변환
         const point = projection.pointFromCoords(targetLatLng);

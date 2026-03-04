@@ -16,7 +16,7 @@ import { useKakaoMapSdk } from "../lib/useKakaoMapSdk";
 import { useMapInteraction } from "../lib/useMapInteraction";
 import { useMapLayers } from "../lib/useMapLayers";
 import { useMapViewport } from "../lib/useMapViewport";
-import { allCctvForPurposeAtom } from "../model/atoms";
+import { allCctvForPurposeAtom, mapCenterCommandAtom } from "../model/atoms";
 import { CCTVMarkers } from "./CCTVMarker";
 import { IsochronePolygon } from "./IsoChronePolygon";
 import { ObservationMarker } from "./ObservationMarker";
@@ -44,6 +44,19 @@ export function MapView() {
     handleIdle,
     recenter,
   } = useMapViewport(mapRef);
+
+  // 외부 PanTo 명령 구독
+  const mapCenterCommand = useAtomValue(mapCenterCommandAtom);
+  useEffect(() => {
+    if (mapCenterCommand) {
+      panToWithOffset(
+        mapCenterCommand.lat,
+        mapCenterCommand.lng,
+        0,
+        mapCenterCommand.yOffset || 0,
+      );
+    }
+  }, [mapCenterCommand, panToWithOffset]);
 
   const {
     mapLayers,

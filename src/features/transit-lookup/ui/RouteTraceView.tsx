@@ -6,8 +6,8 @@ import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { useSetAtom } from "jotai";
-import { ArrowLeft, MapPinned, Repeat } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ArrowLeft, Repeat } from "lucide-react";
+import { useEffect } from "react";
 import { selectedRoutePathAtom } from "../model/atoms";
 import type { RouteTraceRequest, RouteTraceResponse } from "../model/types";
 
@@ -29,7 +29,6 @@ export function RouteTraceView({
   onClose,
 }: Props) {
   const setRoutePath = useSetAtom(selectedRoutePathAtom);
-  const [keepRoute, setKeepRoute] = useState(false);
 
   const { data, isLoading, error } = useQuery({
     queryKey: [
@@ -58,6 +57,13 @@ export function RouteTraceView({
       const validStops = data.stops.filter((s) => s.lat !== 0 && s.lng !== 0);
       const validPath = validStops.map((s) => ({ lat: s.lat, lng: s.lng }));
       if (validPath.length >= 2) {
+        // 기준역(boardingStationId)의 인덱스와 누적 시간을 찾습니다.
+        let boardIdx = validStops.findIndex(
+          (s) => s.stationId === boardingStationId,
+        );
+        if (boardIdx === -1) boardIdx = 0; // fallback
+        const baseMinutes = validStops[boardIdx].cumulativeMinutes;
+
         setRoutePath({
           routeName: routeName,
           type,
@@ -66,21 +72,17 @@ export function RouteTraceView({
             lat: s.lat,
             lng: s.lng,
             stationName: s.stationName,
-            cumulativeMinutes: s.cumulativeMinutes,
+            cumulativeMinutes: s.cumulativeMinutes - baseMinutes,
             isTransfer: s.isTransfer,
-            isFirst: idx === 0,
+            isFirst: idx === boardIdx,
           })),
         });
       }
     }
-    // 언마운트 시 keepRoute가 아니면 경로 지우기
-    return () => {
-      if (!keepRoute) setRoutePath(null);
-    };
-  }, [data, routeName, type, setRoutePath, keepRoute]);
+  }, [data, routeName, type, setRoutePath, boardingStationId]);
 
   const handleClose = () => {
-    if (!keepRoute) setRoutePath(null);
+    setRoutePath(null);
     onClose();
   };
 
@@ -107,25 +109,6 @@ export function RouteTraceView({
             </span>
           )}
         </div>
-        <Button
-          variant={keepRoute ? "default" : "outline"}
-          size="sm"
-          className={cn(
-            "h-7 text-[10px] px-2 shrink-0 gap-1",
-            keepRoute
-              ? "bg-blue-500 hover:bg-blue-600 text-white"
-              : "text-gray-500 hover:text-blue-600",
-          )}
-          onClick={() => setKeepRoute((prev) => !prev)}
-          title={
-            keepRoute
-              ? "경로 표시를 해제합니다"
-              : "뒤로 가도 지도에 경로를 유지합니다"
-          }
-        >
-          <MapPinned className="w-3 h-3" />
-          {keepRoute ? "경로 고정" : "경로 고정"}
-        </Button>
       </div>
 
       {/* 로딩 */}

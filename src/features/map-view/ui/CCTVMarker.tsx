@@ -6,6 +6,11 @@ import {
   cctvSearchRadiusAtom,
   hoveredCctvIdAtom,
 } from "@/features/cctv-mapping/model/atoms";
+import {
+  selectedRoutePathAtom,
+  transitReferenceTimeAtom,
+} from "@/features/transit-lookup/model/atoms";
+import { getDistanceKm } from "@/shared/lib/geo/distance";
 import { cn } from "@/shared/lib/utils";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
@@ -27,6 +32,8 @@ export function CCTVMarkers({ onCenterChange, purposeFilter }: Props) {
   const searchRadius = useAtomValue(cctvSearchRadiusAtom);
   const hoveredId = useAtomValue(hoveredCctvIdAtom);
   const [activePopup, setActivePopup] = useAtom(activePopupAtom);
+  const selectedRoutePath = useAtomValue(selectedRoutePathAtom);
+  const transitRefTime = useAtomValue(transitReferenceTimeAtom);
   const map = useMap();
 
   const selectedId = activePopup?.type === "cctv" ? activePopup.id : null;
@@ -81,6 +88,74 @@ export function CCTVMarkers({ onCenterChange, purposeFilter }: Props) {
     return mainPart;
   };
 
+  // CCTV 위치와 대중교통 경로를 비교하여 예상 도달 시각(HH:mm)을 리턴하는 함수
+  const getEstimatedArrivalTime = (cctvLat: number, cctvLng: number) => {
+    if (
+      !selectedRoutePath ||
+      selectedRoutePath.stops.length < 2 ||
+      !transitRefTime
+    )
+      return null;
+
+    const stops = selectedRoutePath.stops;
+    let minDistance = Number.MAX_VALUE;
+    let closestSegIdx = 0;
+
+    // CCTV와 가장 가까운 (정류소A -> 정류소B) 선분을 찾음
+    for (let i = 0; i < stops.length - 1; i++) {
+      const s1 = stops[i];
+      const s2 = stops[i + 1];
+
+      // 약식 거리: CCTV와 두 정류소 간 평균 거리 사용
+      const dist1 = getDistanceKm(
+        { lat: cctvLat, lng: cctvLng },
+        { lat: s1.lat, lng: s1.lng },
+      );
+      const dist2 = getDistanceKm(
+        { lat: cctvLat, lng: cctvLng },
+        { lat: s2.lat, lng: s2.lng },
+      );
+      const avgDist = (dist1 + dist2) / 2;
+
+      if (avgDist < minDistance) {
+        minDistance = avgDist;
+        closestSegIdx = i;
+      }
+    }
+
+    const s1 = stops[closestSegIdx];
+    const s2 = stops[closestSegIdx + 1];
+
+    const distFromS1 = getDistanceKm(
+      { lat: cctvLat, lng: cctvLng },
+      { lat: s1.lat, lng: s1.lng },
+    );
+    const distFromS2 = getDistanceKm(
+      { lat: cctvLat, lng: cctvLng },
+      { lat: s2.lat, lng: s2.lng },
+    );
+
+    // 두 정류소 간 거리가 너무 멀거나 0일 경우의 예외 처리
+    const totalDist = distFromS1 + distFromS2;
+    const ratio = totalDist > 0 ? distFromS1 / totalDist : 0;
+
+    // s1 ~ s2 사이의 누적 시간(분) 차이
+    const timeDiff = s2.cumulativeMinutes - s1.cumulativeMinutes;
+
+    // 비율만큼 시간을 더해줌
+    const estimatedExtraMinutes = timeDiff * ratio;
+    const totalCumulativeMinutes = s1.cumulativeMinutes + estimatedExtraMinutes;
+
+    // 기준 시각에 더하기
+    const baseTime = new Date(transitRefTime);
+    baseTime.setMinutes(baseTime.getMinutes() + totalCumulativeMinutes);
+
+    return baseTime.toLocaleTimeString("ko-KR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   return (
     <>
       {/* 검색 반경 시각화 */}
@@ -113,7 +188,7 @@ export function CCTVMarkers({ onCenterChange, purposeFilter }: Props) {
               <button
                 type="button"
                 className={cn(
-                  "relative flex items-center justify-center transition-all duration-200",
+                  "relative flex flex-col items-center justify-center transition-all duration-200",
                   "group -translate-x-1/2 -translate-y-1/2", // 중심점 맞춤
                 )}
                 onClick={(e) => {
@@ -124,8 +199,17 @@ export function CCTVMarkers({ onCenterChange, purposeFilter }: Props) {
                   });
                 }}
               >
+                {/* 예상 도착 시간 말풍선 (경로 존재 시) */}
+                {selectedRoutePath && transitRefTime && (
+                  <div className="absolute -top-7 whitespace-nowrap bg-blue-600/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm scale-90 origin-bottom group-hover:scale-100 transition-transform">
+                    {getEstimatedArrivalTime(c.lat, c.lng)}
+                    {/* 말풍선 꼬리 */}
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-[3px] border-transparent border-t-blue-600/90" />
+                  </div>
+                )}
+
                 {/* Expand touch target area */}
-                <div className="absolute inset-0 -m-3 rounded-full" />
+                <div className="absolute inset-0 -m-3 rounded-full cursor-pointer" />
 
                 {/* Marker Body */}
                 <div
