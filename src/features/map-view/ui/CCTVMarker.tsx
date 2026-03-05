@@ -175,10 +175,8 @@ export function CCTVMarkers({ onCenterChange, purposeFilter }: Props) {
       routeStartTime.getTime() + estimatedSec * 1000,
     );
 
-    return arrivalTime.toLocaleTimeString("ko-KR", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    // hh:mm (24시간제)
+    return arrivalTime.toTimeString().slice(0, 5);
   };
 
   return (

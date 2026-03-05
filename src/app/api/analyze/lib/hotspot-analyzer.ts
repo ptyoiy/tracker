@@ -65,16 +65,12 @@ export function extractHotspots(
   const totalRouteCount = candidateRoutes.length;
   if (totalRouteCount < 2) return [];
 
-  // 1. Resample all routes
-  const allPoints: ResampledPoint[] = [];
+  // 각 노선의 정밀한 궤적 점들을 추출
   const routePointsMap = new Map<string, ResampledPoint[]>();
-
   for (const route of candidateRoutes) {
-    // Combine all leg polylines
     const fullPolyline: { lat: number; lng: number }[] = [];
     for (const leg of route.legs) {
       if (fullPolyline.length > 0 && leg.polyline.length > 0) {
-        // avoid duplicating the connection point if exact match
         const last = fullPolyline[fullPolyline.length - 1];
         const first = leg.polyline[0];
         if (last.lat === first.lat && last.lng === first.lng) {
@@ -86,33 +82,10 @@ export function extractHotspots(
         fullPolyline.push(...leg.polyline);
       }
     }
-
     const pts = resamplePolyline(fullPolyline, route.id, [route.primaryMode]);
-    allPoints.push(...pts);
     routePointsMap.set(route.id, pts);
   }
 
-  // 2. Cross-compare to find coverage
-  // O(N^2) where N is total points
-  for (let i = 0; i < allPoints.length; i++) {
-    const p1 = allPoints[i];
-    for (let j = i + 1; j < allPoints.length; j++) {
-      const p2 = allPoints[j];
-      if (p1.routeId === p2.routeId) continue;
-
-      const dist = getDistanceKm(p1, p2);
-      if (dist <= PROXIMITY_THRESHOLD_KM) {
-        p1.coveredRoutes.add(p2.routeId);
-        p2.coveredRoutes.add(p1.routeId);
-      }
-    }
-    // 최소 2개 이상의 노선이 겹치면 핫스팟으로 인정
-    if (p1.coveredRoutes.size >= 2) {
-      p1.isHot = true;
-    }
-  }
-
-  // 3. Extract continuous hot segments
   type CandHotspot = {
     polyline: { lat: number; lng: number }[];
     coveredRouteIds: Set<string>;
@@ -121,28 +94,35 @@ export function extractHotspots(
     anchorPoint: { lat: number; lng: number };
   };
 
-  const candidateHotspots: CandHotspot[] = [];
+  const finalHotspots: CandHotspot[] = [];
 
-  for (const [_routeId, pts] of routePointsMap.entries()) {
-    let currentHotSegment: ResampledPoint[] = [];
+  // 1번 노선을 기준으로 다른 노선들과 비교하며 공통 구간(교집합)을 연속적으로 잘라냄
+  // 모든 조합을 체크하여 순수 중복 구간들을 찾음
+  const baseRoute = candidateRoutes[0];
+  const basePts = routePointsMap.get(baseRoute.id) || [];
 
-    const flush = () => {
-      // Must have at least 2 points to form a line
-      if (currentHotSegment.length >= 2) {
-        const poly = currentHotSegment.map((p) => ({ lat: p.lat, lng: p.lng }));
+  // 모든 다른 노선들에 대해, baseRoute와 겹치는 "연속된 점들" 구간을 찾음
+  for (let i = 1; i < candidateRoutes.length; i++) {
+    const candRoute = candidateRoutes[i];
+    const candPts = routePointsMap.get(candRoute.id) || [];
+
+    let currentSegment: ResampledPoint[] = [];
+
+    const flushSegment = () => {
+      if (currentSegment.length >= 2) {
+        const poly = currentSegment.map((p) => ({ lat: p.lat, lng: p.lng }));
         const line = turf.lineString(poly.map((p) => [p.lng, p.lat]));
         const lenMeters = turf.length(line, { units: "kilometers" }) * 1000;
 
-        // Skip segments that are too short to be meaningful
-        if (lenMeters >= 50) {
+        // 의미 있는 길이의 교집합 구간만 추출 (50m 이상 혹은 점 3개 이상)
+        if (lenMeters >= 30) {
           const covered = new Set<string>();
+          covered.add(baseRoute.id);
+          covered.add(candRoute.id);
           const modes = new Set<TransportMode>();
-          for (const p of currentHotSegment) {
-            for (const r of p.coveredRoutes) covered.add(r);
-            for (const m of p.modes) modes.add(m);
-          }
+          modes.add(baseRoute.primaryMode);
+          modes.add(candRoute.primaryMode);
 
-          // Anchor point: point matching observation
           let minObsDist = Number.MAX_VALUE;
           let anchor = poly[0];
           for (const p of poly) {
@@ -153,7 +133,7 @@ export function extractHotspots(
             }
           }
 
-          candidateHotspots.push({
+          finalHotspots.push({
             polyline: poly,
             coveredRouteIds: covered,
             modes,
@@ -162,64 +142,42 @@ export function extractHotspots(
           });
         }
       }
-      currentHotSegment = [];
+      currentSegment = [];
     };
 
-    for (const p of pts) {
-      if (p.isHot) {
-        currentHotSegment.push(p);
+    for (const bPt of basePts) {
+      // 해당 베이스 점이 candPts와 인접한지 확인
+      let isNear = false;
+      for (const cPt of candPts) {
+        if (getDistanceKm(bPt, cPt) <= PROXIMITY_THRESHOLD_KM) {
+          isNear = true;
+          break;
+        }
+      }
+
+      if (isNear) {
+        currentSegment.push(bPt);
       } else {
-        flush();
+        flushSegment();
       }
     }
-    flush();
+    flushSegment();
   }
 
-  // 4. Deduplicate candidate hotspots
-  // Sort by length descending, so we keep the most complete representations
-  candidateHotspots.sort((a, b) => b.lengthMeters - a.lengthMeters);
-
-  const finalHotspots: CandHotspot[] = [];
-
-  for (const cand of candidateHotspots) {
-    // Check if cand overlaps significantly with any already selected final hotspot
-    let isDuplicate = false;
-    for (const finalCand of finalHotspots) {
-      // Simple heuristic: if cand's midpoint is near finalCand
-      const candMidIdx = Math.floor(cand.polyline.length / 2);
-      const candMid = cand.polyline[candMidIdx];
-
-      // check distance from candMid to finalCand polyline
-      let minDist = Number.MAX_VALUE;
-      for (const p of finalCand.polyline) {
-        const d = getDistanceKm(candMid, p);
-        if (d < minDist) minDist = d;
-      }
-
-      if (minDist <= PROXIMITY_THRESHOLD_KM) {
-        isDuplicate = true;
-        // 중복인 경우 단순 스킵 (머지하지 않음)
-        break;
-      }
-    }
-
-    if (!isDuplicate) {
-      finalHotspots.push(cand);
-    }
-  }
-
-  // 5. Build final hotspots without chunking
-  // 하나의 거대한 연속 구간을 자르지 않고そのまま 반환하되, 점유율은 재계산
-  const splitHotspots: HotspotSegment[] = [];
+  // 이제 추출된 원시(Raw) 교집합 구간들에 대해, 나머지 노선들이 여기 속하는지 다시 채점
+  // 중복이 심한 교집합 덩어리가 여러 개 나올 수 있으므로, 최종 통합.
+  const mergedHotspots: HotspotSegment[] = [];
 
   for (const hot of finalHotspots) {
     const subPoly = hot.polyline;
     if (subPoly.length < 2) continue;
 
-    const chunkCoveredRoutes = new Set<string>();
-    const chunkModes = new Set<TransportMode>();
+    const chunkCoveredRoutes = new Set<string>(hot.coveredRouteIds);
+    const chunkModes = new Set<TransportMode>(hot.modes);
 
     for (const candRoute of candidateRoutes) {
+      if (chunkCoveredRoutes.has(candRoute.id)) continue;
+
       const candPts = routePointsMap.get(candRoute.id) || [];
       let matchCount = 0;
 
@@ -234,15 +192,12 @@ export function extractHotspots(
         if (isNear) matchCount++;
       }
 
-      // 쪼개지 않은 거대 구간이므로, 이 긴 구간의 절반(50%) 이상을 나란히 달려야 포함으로 인정
-      if (matchCount >= subPoly.length * 0.5) {
+      // 이 순수 중복 구간 위에 해당 노선이 대부분(80% 이상) 겹친다면 이 핫스팟의 포함 노선으로 인정
+      if (matchCount >= subPoly.length * 0.8) {
         chunkCoveredRoutes.add(candRoute.id);
         chunkModes.add(candRoute.primaryMode);
       }
     }
-
-    // 재계산 결과 겹치는 경로가 2개 미만이라면 핫스팟 취소
-    if (chunkCoveredRoutes.size < 2) continue;
 
     let minObsDist = Number.MAX_VALUE;
     let anchor = subPoly[0];
@@ -254,17 +209,48 @@ export function extractHotspots(
       }
     }
 
-    splitHotspots.push({
-      id: crypto.randomUUID(),
-      segmentId,
-      polyline: subPoly,
-      anchorPoint: anchor,
-      coveredRouteIds: Array.from(chunkCoveredRoutes),
-      coverageRatio: chunkCoveredRoutes.size / totalRouteCount,
-      lengthMeters: hot.lengthMeters,
-      modes: Array.from(chunkModes),
-    });
+    // 중복 방지: 이미 거의 동일한 핫스팟이 merged 쪽에 돌고 있다면 스킵 (혹은 루트 추가)
+    const midIdx = Math.floor(subPoly.length / 2);
+    const midPt = subPoly[midIdx];
+
+    let isDuplicate = false;
+    for (const existing of mergedHotspots) {
+      // 기존 핫스팟의 바운더리 내에 현재 미드포인트가 있고, 커버된 라우트 셋이 비슷하다면
+      // (중복 선분 방지)
+      let isMidNear = false;
+      for (const ep of existing.polyline) {
+        if (getDistanceKm(midPt, ep) <= PROXIMITY_THRESHOLD_KM) {
+          isMidNear = true;
+          break;
+        }
+      }
+
+      if (isMidNear) {
+        // 기존 핫스팟에 라우트들을 병합하고 스킵 (가장 짧은 중복구간을 채택하는 효과)
+        for (const r of chunkCoveredRoutes) {
+          if (!existing.coveredRouteIds.includes(r))
+            existing.coveredRouteIds.push(r);
+        }
+        existing.coverageRatio =
+          existing.coveredRouteIds.length / totalRouteCount;
+        isDuplicate = true;
+        break;
+      }
+    }
+
+    if (!isDuplicate && chunkCoveredRoutes.size >= 2) {
+      mergedHotspots.push({
+        id: crypto.randomUUID(),
+        segmentId,
+        polyline: subPoly,
+        anchorPoint: anchor,
+        coveredRouteIds: Array.from(chunkCoveredRoutes),
+        coverageRatio: chunkCoveredRoutes.size / totalRouteCount,
+        lengthMeters: hot.lengthMeters,
+        modes: Array.from(chunkModes),
+      });
+    }
   }
 
-  return splitHotspots;
+  return mergedHotspots;
 }
