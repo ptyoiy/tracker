@@ -56,7 +56,7 @@ export function SelectionOverlay() {
   };
 
   return (
-    <div className="absolute top-16 right-4 z-20 flex flex-col items-end gap-2">
+    <div className="relative flex flex-col items-end gap-2 z-20">
       {/* 1. 토글 버튼 (Layers 버튼과 유사) */}
       <div className="relative">
         <Button
@@ -105,8 +105,7 @@ export function SelectionOverlay() {
                   <div className="flex items-center gap-1.5">
                     <Flame className="w-3.5 h-3.5 text-orange-600 shrink-0" />
                     <span className="text-xs font-bold text-orange-800 truncate">
-                      {Math.round(activeHotspot.coverageRatio * 100)}% 중복
-                      핫스팟
+                      {Math.round(activeHotspot.coverageRatio * 100)}% 중복 경로
                     </span>
                   </div>
                   <span className="text-[10px] text-orange-600">
@@ -126,34 +125,82 @@ export function SelectionOverlay() {
 
             {/* 경로 옵션 항목들 */}
             {selectedRoutesData.map((route) => {
-              const busNumbers = [
-                ...new Set(
-                  route.legs
-                    .filter((l) => l.mode === "BUS")
-                    .map((l) => l.route)
-                    .filter(Boolean),
-                ),
-              ].join(", ");
+              // 1. 이름/아이콘 결정
+              let primaryIcon = (
+                <RouteIcon className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+              );
+              let primaryName = "경로 옵션";
+
+              if (route.primaryMode === "walking") {
+                primaryIcon = (
+                  <span className="text-[12px] leading-none">🚶</span>
+                );
+                primaryName = "도보 경로";
+              } else if (route.primaryMode === "transit") {
+                primaryIcon = (
+                  <span className="text-[12px] leading-none">🚌</span>
+                );
+                const busNumbers = [
+                  ...new Set(
+                    route.legs
+                      .filter((l) => l.mode === "BUS")
+                      .map((l) => l.route)
+                      .filter(Boolean),
+                  ),
+                ].join(", ");
+                primaryName = busNumbers
+                  ? `${busNumbers}번 버스`
+                  : "대중교통 경로";
+              } else if (route.primaryMode === "vehicle") {
+                primaryIcon = (
+                  <span className="text-[12px] leading-none">🚗</span>
+                );
+                primaryName = "차량 경로";
+              }
+
+              // 2. 경로 순서 텍스트 생성 (대중교통의 경우)
+              let pathSequence = "";
+              if (route.primaryMode === "transit" && route.legs.length > 0) {
+                pathSequence = route.legs
+                  .map((leg) => {
+                    if (leg.mode === "WALK") return "도보";
+                    if (leg.mode === "BUS") return `${leg.route}번 버스`;
+                    if (leg.mode === "SUBWAY")
+                      return leg.route ? `${leg.route}` : "지하철";
+                    return "이동";
+                  })
+                  .join(" → ");
+              } else if (route.primaryMode === "walking") {
+                pathSequence = "전 구간 도보 이동";
+              } else if (route.primaryMode === "vehicle") {
+                pathSequence = "전 구간 차량 이동";
+              }
 
               return (
                 <div
                   key={route.id}
                   className="bg-blue-50 border border-blue-200 rounded-lg p-2 flex items-start justify-between"
                 >
-                  <div className="flex flex-col gap-1 overflow-hidden pr-2">
+                  <div className="flex flex-col gap-1.5 overflow-hidden pr-2 w-full">
+                    {/* 첫 번째 줄: (아이콘) 대중교통 이름 */}
                     <div className="flex items-center gap-1.5">
-                      <RouteIcon className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                      {primaryIcon}
                       <span className="text-xs font-bold text-blue-800 truncate">
-                        {route.primaryMode === "walking"
-                          ? "도보 경로"
-                          : busNumbers
-                            ? `${busNumbers}번 버스`
-                            : "경로 옵션"}
+                        {primaryName}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-[10px] text-blue-600">
+
+                    {/* 두 번째 줄: (경로 순서 설명) */}
+                    {pathSequence && (
+                      <div className="text-[10px] text-blue-600/80 leading-tight break-keep">
+                        {pathSequence}
+                      </div>
+                    )}
+
+                    {/* 세 번째 줄: (걸리는 시간) (거리km) */}
+                    <div className="flex items-center gap-1.5 text-[11px] text-blue-700 font-semibold mt-0.5">
                       <span>
-                        {Math.round(route.totalDurationSeconds / 60)}분
+                        {Math.round(route.totalDurationSeconds / 60)}분 소요
                       </span>
                       <span>·</span>
                       <span>{route.totalDistanceKm.toFixed(1)}km</span>
@@ -168,7 +215,7 @@ export function SelectionOverlay() {
                         return next;
                       });
                     }}
-                    className="p-1 shrink-0 rounded text-blue-400 hover:bg-blue-200 hover:text-blue-700 transition-colors"
+                    className="p-1 shrink-0 rounded text-blue-400 hover:bg-blue-200 hover:text-blue-700 transition-colors -mr-1 -mt-1"
                     aria-label="제거"
                   >
                     <X className="w-3.5 h-3.5" />

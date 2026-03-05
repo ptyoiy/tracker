@@ -93,18 +93,19 @@ export function MapView() {
     <div className="w-full h-full relative min-h-[500px]">
       {/* Floating Controls */}
       <div className="absolute top-4 right-4 z-20 flex flex-col gap-2 items-end">
-        <Button
-          variant="secondary"
-          size="icon"
-          className={`shadow-md transition-colors ${isLayerMenuOpen ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-white/90"}`}
-          aria-label="지도 레이어 설정"
-          aria-expanded={isLayerMenuOpen}
-          onClick={toggleLayerMenu}
-        >
-          <Layers className="w-5 h-5" aria-hidden="true" />
-        </Button>
-
-        <SelectionOverlay />
+        <div className="flex items-center gap-2">
+          <SelectionOverlay />
+          <Button
+            variant="secondary"
+            size="icon"
+            className={`shadow-md transition-colors ${isLayerMenuOpen ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-white/90"}`}
+            aria-label="지도 레이어 설정"
+            aria-expanded={isLayerMenuOpen}
+            onClick={toggleLayerMenu}
+          >
+            <Layers className="w-5 h-5" aria-hidden="true" />
+          </Button>
+        </div>
 
         {isLayerMenuOpen && (
           <div className="bg-white rounded-lg shadow-xl border p-2 flex flex-col gap-1 min-w-[160px] animate-in fade-in slide-in-from-top-2 duration-200">
