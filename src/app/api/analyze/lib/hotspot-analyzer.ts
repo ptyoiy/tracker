@@ -236,6 +236,38 @@ export function extractHotspots(
 
       if (subPoly.length < 2) continue;
 
+      // --- [NEW] 청크별 정밀 재계산 로직 ---
+      // 매우 긴 경로의 경우, 스쳐 지나간 모든 라우트가 합집합으로 쌓이는 문제를 방지하기 위해
+      // 이 특정 350m 청크(subPoly) 내에서만 점유율을 독립적으로 다시 계산합니다.
+      const chunkCoveredRoutes = new Set<string>();
+      const chunkModes = new Set<TransportMode>();
+
+      for (const candRoute of candidateRoutes) {
+        const candPts = routePointsMap.get(candRoute.id) || [];
+        let matchCount = 0;
+
+        for (const sp of subPoly) {
+          let isNear = false;
+          for (const cp of candPts) {
+            if (getDistanceKm(sp, cp) <= PROXIMITY_THRESHOLD_KM) {
+              isNear = true;
+              break;
+            }
+          }
+          if (isNear) matchCount++;
+        }
+
+        // 청크 내의 점 중 50% 이상을 커버하면 이 라우트가 해당 청크를 지난다고 판정
+        if (matchCount >= subPoly.length * COVERAGE_THRESHOLD) {
+          chunkCoveredRoutes.add(candRoute.id);
+          chunkModes.add(candRoute.primaryMode);
+        }
+      }
+
+      // 재계산 결과, 이 청크에 겹치는 경로가 2개 미만이라면 핫스팟으로서 의미 없음
+      if (chunkCoveredRoutes.size < 2) continue;
+      // -----------------------------------
+
       let minObsDist = Number.MAX_VALUE;
       let anchor = subPoly[0];
       for (const p of subPoly) {
@@ -251,10 +283,10 @@ export function extractHotspots(
         segmentId,
         polyline: subPoly,
         anchorPoint: anchor,
-        coveredRouteIds: Array.from(hot.coveredRouteIds),
-        coverageRatio: hot.coveredRouteIds.size / totalRouteCount,
+        coveredRouteIds: Array.from(chunkCoveredRoutes),
+        coverageRatio: chunkCoveredRoutes.size / totalRouteCount,
         lengthMeters: turf.length(subLine, { units: "kilometers" }) * 1000,
-        modes: Array.from(hot.modes) as TransportMode[],
+        modes: Array.from(chunkModes),
       });
     }
   }
