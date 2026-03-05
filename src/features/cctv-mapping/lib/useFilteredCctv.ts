@@ -72,8 +72,9 @@ export function useFilteredCctv() {
 
     let candidates = Array.from(uniqueCctvs.values());
 
-    // 뷰포트 필터링은 성능을 위해 유지하되, 너무 빡빡하지 않게 적용
-    if (viewport) {
+    // 뷰포트 필터링은 성능을 위해 유지하되, 특정 경로를 켰을 때는
+    // 확대를 하더라도 경로 전체의 CCTV가 전부 보이도록(개수 불일치 방지) 뷰포트 자르기를 생략함.
+    if (viewport && selectedRouteIds.size === 0) {
       const { sw, ne } = viewport;
       const BUFFER = 0.01; // 약 1km 정도의 넉넉한 버퍼
       candidates = filterCctvByContext(candidates, {
@@ -86,7 +87,7 @@ export function useFilteredCctv() {
     }
 
     return candidates;
-  }, [selectedRoutes, allCctv, viewport]);
+  }, [selectedRoutes, allCctv, viewport, selectedRouteIds.size]);
 
   // 최종 결과 반환 (수동 검색 중이면 수동 검색 결과를, 아니면 경로 주변 결과를)
   return useMemo(() => {

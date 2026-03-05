@@ -252,5 +252,88 @@ export function extractHotspots(
     }
   }
 
-  return mergedHotspots;
+  // ---------------------------------------------------------
+  // 3. 차집합(Subtraction) 라우팅 로직 추가
+  // 상호 배타적인(Mutually Exclusive) 핫스팟 추출을 위해,
+  // 중복도(coverageRatio)가 가장 높은 핫스팟이 선형 구간을 독점하고,
+  // 중복도가 낮은 핫스팟들은 그 구간을 뺀 나머지 유니크한 자기만의 길만 갖도록 궤적을 자름.
+  // ---------------------------------------------------------
+
+  mergedHotspots.sort((a, b) => b.coverageRatio - a.coverageRatio);
+
+  const exclusiveHotspots: HotspotSegment[] = [];
+
+  for (const currentHot of mergedHotspots) {
+    let currentSections: Array<{ lat: number; lng: number }[]> = [
+      currentHot.polyline,
+    ];
+
+    for (const higherHot of exclusiveHotspots) {
+      const nextSections: Array<{ lat: number; lng: number }[]> = [];
+
+      for (const section of currentSections) {
+        let currentSubSection: { lat: number; lng: number }[] = [];
+
+        const flushSubSection = () => {
+          if (currentSubSection.length >= 2) {
+            nextSections.push([...currentSubSection]);
+          }
+          currentSubSection = [];
+        };
+
+        for (const pt of section) {
+          // 상위 핫스팟 선분들과 얼마나 가까운지 검사
+          let isOverlapping = false;
+          for (const hPt of higherHot.polyline) {
+            if (getDistanceKm(pt, hPt) <= PROXIMITY_THRESHOLD_KM) {
+              isOverlapping = true;
+              break;
+            }
+          }
+
+          if (isOverlapping) {
+            // 겹치면 여기서 잘라냄
+            flushSubSection();
+          } else {
+            // 안 겹치면 계속 이어붙임
+            currentSubSection.push(pt);
+          }
+        }
+        flushSubSection();
+      }
+      currentSections = nextSections;
+    }
+
+    // 잘려나간 후 남은 유효한 조각들만 새로운 핫스팟 객체로 등록
+    for (const section of currentSections) {
+      if (section.length >= 2) {
+        const line = turf.lineString(section.map((p) => [p.lng, p.lat]));
+        const lenMeters = turf.length(line, { units: "kilometers" }) * 1000;
+
+        // 조각의 길이가 너무 짧으면 폐기 (예약된 30m보다 짧거나, 너무 자잘한 찌꺼기일 확률)
+        // 화면에서 마커를 식별하고 누르려면 최소 30m~50m는 필요. 여기선 20m로 약간 여유를 둠.
+        if (lenMeters >= 20) {
+          let minObsDist = Number.MAX_VALUE;
+          let anchor = section[0];
+          for (const p of section) {
+            const d = getDistanceKm(p, fromObs);
+            if (d < minObsDist) {
+              minObsDist = d;
+              anchor = p;
+            }
+          }
+
+          exclusiveHotspots.push({
+            ...currentHot,
+            id: crypto.randomUUID(), // 분할될 수 있으므로 새 ID 발급
+            polyline: section,
+            lengthMeters: lenMeters,
+            anchorPoint: anchor,
+          });
+        }
+      }
+    }
+  }
+
+  return exclusiveHotspots;
 }

@@ -4,6 +4,7 @@ import { useAnalyzeQuery } from "@/features/observation-input/lib/useAnalyzeQuer
 import {
   activeHotspotIdAtom,
   lastAnalysisParamsAtom,
+  selectedRouteIdsAtom,
 } from "@/features/route-analysis/model/atoms";
 import { cn } from "@/shared/lib/utils";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
@@ -19,6 +20,8 @@ export function HotspotMarkers() {
   );
   const [activeHotspotId, setActiveHotspotId] = useAtom(activeHotspotIdAtom);
   const setActivePopup = useSetAtom(activePopupAtom);
+  const selectedRouteIds = useAtomValue(selectedRouteIdsAtom);
+  const hasSelectedRoutes = selectedRouteIds.size > 0;
 
   const hotspots = data?.hotspotSegments ?? [];
   if (hotspots.length === 0) return null;
@@ -35,7 +38,7 @@ export function HotspotMarkers() {
               path={hot.polyline}
               strokeWeight={isActive ? 12 : 8}
               strokeColor="#f97316"
-              strokeOpacity={isActive ? 0.9 : 0.6}
+              strokeOpacity={isActive ? 0.9 : hasSelectedRoutes ? 0.2 : 0.6}
               strokeStyle="solid"
               zIndex={isActive ? 45 : 35}
             />
@@ -44,7 +47,7 @@ export function HotspotMarkers() {
               path={hot.polyline}
               strokeWeight={isActive ? 6 : 4}
               strokeColor="#fff"
-              strokeOpacity={0.8}
+              strokeOpacity={isActive ? 0.8 : hasSelectedRoutes ? 0.3 : 0.8}
               strokeStyle="shortdash"
               zIndex={isActive ? 46 : 36}
             />
@@ -63,8 +66,12 @@ export function HotspotMarkers() {
                 <button
                   type="button"
                   className={cn(
-                    "flex flex-col items-center group transition-transform cursor-pointer",
-                    isActive ? "scale-125" : "scale-100 hover:scale-110",
+                    "flex flex-col items-center group transition-all duration-300 cursor-pointer",
+                    isActive
+                      ? "scale-125 opacity-100"
+                      : hasSelectedRoutes
+                        ? "scale-100 opacity-40 hover:opacity-100 hover:scale-110"
+                        : "scale-100 opacity-100 hover:scale-110",
                   )}
                   onClick={() => {
                     const nextId = isActive ? null : hot.id;
