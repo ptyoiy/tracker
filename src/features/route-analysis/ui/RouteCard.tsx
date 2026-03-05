@@ -129,7 +129,7 @@ export function RouteCard({ route, index }: Props) {
       {isHotspotActive && (
         <div className="w-full flex justify-start -mb-1 relative z-10">
           <span className="text-[10px] bg-orange-100/80 text-orange-700 font-bold px-1.5 py-0.5 rounded border border-orange-200 flex items-center gap-1 w-fit shadow-sm">
-            🔥 선택된 겹침 경로 옵션
+            🔥 선택된 중복 경로 옵션
           </span>
         </div>
       )}

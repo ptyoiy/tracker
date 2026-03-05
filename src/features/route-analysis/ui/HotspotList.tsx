@@ -27,11 +27,11 @@ export function HotspotList({ segmentId }: Props) {
 
   const allHotspots = data?.hotspotSegments ?? [];
 
-  // 이 세그먼트에 해당하는 겹침 경로만 필터링
+  // 이 세그먼트에 해당하는 중복 경로만 필터링
   const segmentHotspots = allHotspots.filter((h) => h.segmentId === segmentId);
   if (segmentHotspots.length === 0) return null;
 
-  // 사용자가 선택한 경로가 있으면 해당 경로들의 겹침을 우선 표시
+  // 사용자가 선택한 경로가 있으면 해당 경로들의 중복을 우선 표시
   const hasSelection = selectedRouteIds.size > 0;
   const selectedSet = selectedRouteIds;
 
@@ -71,7 +71,7 @@ export function HotspotList({ segmentId }: Props) {
     <div className="mt-2 mb-1">
       <div className="flex items-center gap-1.5 mb-1.5 px-0.5">
         <Flame className="w-3.5 h-3.5 text-orange-500" />
-        <span className="text-[11px] font-bold text-gray-600">겹침 경로</span>
+        <span className="text-[11px] font-bold text-gray-600">중복 경로</span>
       </div>
       <div className="flex gap-2 overflow-x-auto pb-1.5 snap-x snap-mandatory custom-scrollbar">
         {sortedHotspots.map((hot) => {
@@ -122,7 +122,7 @@ export function HotspotList({ segmentId }: Props) {
                       : "text-orange-600 bg-orange-100",
                   )}
                 >
-                  {Math.round(hot.coverageRatio * 100)}% 겹침
+                  {Math.round(hot.coverageRatio * 100)}% 중복
                 </span>
                 <span className="text-[10px] text-gray-500 font-medium">
                   {Math.round(hot.lengthMeters)}m

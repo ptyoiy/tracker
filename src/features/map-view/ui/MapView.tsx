@@ -133,7 +133,7 @@ export function MapView() {
               },
               {
                 id: "hotspot" as const,
-                label: "겹침 경로",
+                label: "중복 경로",
                 color: "text-orange-600",
               },
             ].map((layer) => (

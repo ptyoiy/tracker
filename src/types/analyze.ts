@@ -71,7 +71,7 @@ export type AnalyzeRequest = {
 
 export type AnalyzeResponse = {
   segments: SegmentAnalysis[];
-  hotspotSegments?: HotspotSegment[]; // [NEW] 4. 겹침 경로 정보 추가
+  hotspotSegments?: HotspotSegment[]; // [NEW] 4. 중복 경로 정보 추가
   fallbackUsed?: boolean;
   errors: string | null;
 };

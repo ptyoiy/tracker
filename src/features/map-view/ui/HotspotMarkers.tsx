@@ -30,7 +30,7 @@ export function HotspotMarkers() {
 
         return (
           <div key={`hotspot-${hot.id}`}>
-            {/* 겹침 경로 세그먼트 라인 */}
+            {/* 중복 경로 세그먼트 라인 */}
             <Polyline
               path={hot.polyline}
               strokeWeight={isActive ? 12 : 8}
@@ -127,12 +127,12 @@ export function HotspotMarkers() {
                       if (fromStr && toStr) {
                         return `${parseInt(fromStr) + 1} → ${parseInt(toStr) + 1} 관측 지점`;
                       }
-                      return "겹침 구간";
+                      return "중복 구간";
                     })()}
                   </div>
                   <div className="text-[10px] text-gray-600 space-y-1 mt-1.5 pt-1.5 border-t border-gray-100">
                     <div className="flex justify-between items-center bg-orange-50 px-1.5 py-0.5 rounded text-orange-700 font-bold mb-1">
-                      <span>겹침 비율:</span>
+                      <span>중복 비율:</span>
                       <span>{Math.round(hot.coverageRatio * 100)}%</span>
                     </div>
                     <div className="flex justify-between">
@@ -144,7 +144,7 @@ export function HotspotMarkers() {
                     <div className="flex justify-between">
                       <span>경로:</span>
                       <span className="font-medium text-gray-900">
-                        {hot.coveredRouteIds.length}개 경로 겹침
+                        {hot.coveredRouteIds.length}개 경로 중복
                       </span>
                     </div>
                     <div className="flex justify-between">
