@@ -24,12 +24,14 @@ import { activePopupAtom } from "../model/atoms";
 
 type Props = {
   onCenterChange: (center: { lat: number; lng: number }) => void;
-  purposeFilter: Set<string>;
+  purposeFilter?: Set<string>; // [MODIFY] 3. 필터 선택 기능 사라짐에 따른 선택적 prop
 };
 
 export function CCTVMarkers({ onCenterChange, purposeFilter }: Props) {
   const allCctvs = useFilteredCctv();
-  const cctvs = allCctvs.filter((c) => !purposeFilter.has(c.purpose));
+  const cctvs = purposeFilter
+    ? allCctvs.filter((c) => !purposeFilter.has(c.purpose))
+    : allCctvs;
   const searchCenter = useAtomValue(cctvSearchCenterAtom);
   const searchRadius = useAtomValue(cctvSearchRadiusAtom);
   const hoveredId = useAtomValue(hoveredCctvIdAtom);

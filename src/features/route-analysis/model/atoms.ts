@@ -1,7 +1,7 @@
 // src/features/route-analysis/model/atoms.ts
 
-import { atom } from "jotai";
 import type { Observation } from "@/types/observation";
+import { atom } from "jotai";
 
 export const lastAnalysisParamsAtom = atom<{
   observations: Observation[];
@@ -21,3 +21,6 @@ export const selectedRouteIdsAtom = atom<Set<string>>(new Set<string>());
 
 // routeId별 CCTV 개수 매핑
 export const routeCctvCountAtom = atom<Record<string, number>>({});
+
+// 선택된 핫스팟 세그먼트 ID
+export const activeHotspotIdAtom = atom<string | null>(null);

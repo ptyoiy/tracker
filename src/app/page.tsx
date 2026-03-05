@@ -2,7 +2,6 @@
 
 import { useLoadCctvOnce } from "@/features/cctv-mapping/lib/cctv-api";
 import { useComputeRouteCctvCount } from "@/features/cctv-mapping/lib/route-cctv-count";
-import { CCTVSearchTab } from "@/features/cctv-mapping/ui/CCTVSearchTab";
 import { IsochroneControls } from "@/features/map-view/ui/IsochroneControls";
 import { MapView } from "@/features/map-view/ui/MapView";
 import { observationsAtom } from "@/features/observation-input/model/atoms";
@@ -37,7 +36,6 @@ import {
   Info,
   MapPin,
   Navigation,
-  Shield,
 } from "lucide-react";
 import { useEffect, useRef } from "react";
 
@@ -212,6 +210,8 @@ export default function Home() {
                   <IsochroneControls />
                 </SectionItem>
 
+                {/*
+                // [MODIFY] 1. 하단 Drawer에서 주변 CCTV 보기 탭 UI 제거 (기능 유지)
                 <SectionItem
                   value="cctv"
                   title="주변 CCTV 검색"
@@ -220,6 +220,7 @@ export default function Home() {
                 >
                   <CCTVSearchTab />
                 </SectionItem>
+                */}
 
                 <SectionItem
                   value="transit"

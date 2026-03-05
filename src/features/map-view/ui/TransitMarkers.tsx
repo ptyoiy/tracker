@@ -154,9 +154,11 @@ export function TransitMarkers({
                   onCenterChange?.({ lat: station.lat, lng: station.lng });
                 }}
               >
+                {/* [MODIFY] 3. 버스 정류장 마커에서 이름 숨김
                 <div className="bg-blue-400 text-white text-[9px] font-medium px-1 py-0.5 rounded shadow-sm whitespace-nowrap mb-0.5">
                   {station.name}
                 </div>
+                */}
                 <div className="w-4 h-4 bg-white border-2 border-blue-400 rounded-full flex items-center justify-center shadow-sm">
                   <span className="text-[8px]">🚌</span>
                 </div>
@@ -214,9 +216,11 @@ export function TransitMarkers({
                 });
               }}
             >
+              {/* [MODIFY] 3. 버스 정류장 마커에서 이름 숨김
               <div className="bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap mb-0.5">
                 {station.stationName}
               </div>
+              */}
               <div className="w-5 h-5 bg-white border-2 border-blue-500 rounded-full flex items-center justify-center shadow-md relative z-10">
                 <span className="text-[10px]">🚌</span>
               </div>

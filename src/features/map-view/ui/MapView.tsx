@@ -9,8 +9,8 @@ import { observationsAtom } from "@/features/observation-input/model/atoms";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { useAtomValue, useSetAtom } from "jotai";
-import { Check, ChevronDown, Crosshair, Layers } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Check, Crosshair, Layers } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { Map as KakaoMap } from "react-kakao-maps-sdk";
 import { useKakaoMapSdk } from "../lib/useKakaoMapSdk";
 import { useMapInteraction } from "../lib/useMapInteraction";
@@ -18,6 +18,7 @@ import { useMapLayers } from "../lib/useMapLayers";
 import { useMapViewport } from "../lib/useMapViewport";
 import { allCctvForPurposeAtom, mapCenterCommandAtom } from "../model/atoms";
 import { CCTVMarkers } from "./CCTVMarker";
+import { HotspotMarkers } from "./HotspotMarkers";
 import { IsochronePolygon } from "./IsoChronePolygon";
 import { ObservationMarker } from "./ObservationMarker";
 import { RoutePolyline } from "./RoutePolyLine";
@@ -64,15 +65,12 @@ export function MapView() {
     toggleLayer,
     toggleLayerMenu,
     closeLayerMenu,
-    cctvPurposes,
-    cctvPurposeFilter,
-    toggleCctvPurpose,
-    toggleAllCctvPurposes,
   } = useMapLayers();
 
   const { handleMapClick } = useMapInteraction(panToWithOffset);
 
-  const [isCctvSubMenuOpen, setIsCctvSubMenuOpen] = useState(false);
+  // [MODIFY] 3. CCTV 목적별 필터 UI 숨김에 따른 미사용 변수 처리
+  // const [isCctvSubMenuOpen, setIsCctvSubMenuOpen] = useState(false);
 
   if (!isLoaded) {
     return (
@@ -86,8 +84,9 @@ export function MapView() {
     );
   }
 
-  const allPurposesHidden =
-    cctvPurposeFilter.size > 0 && cctvPurposeFilter.size >= cctvPurposes.length;
+  // [MODIFY] 3. CCTV 목적별 필터 UI 숨김에 따른 미사용 변수 처리
+  // const allPurposesHidden =
+  //  cctvPurposeFilter.size > 0 && cctvPurposeFilter.size >= cctvPurposes.length;
 
   return (
     <div className="w-full h-full relative min-h-[500px]">
@@ -146,7 +145,8 @@ export function MapView() {
                   }}
                 >
                   <span className={`flex items-center gap-1.5 ${layer.color}`}>
-                    {layer.label}
+                    {layer.id === "cctv" ? "CCTV" : layer.label}
+                    {/* [MODIFY] 3. CCTV 하위 메뉴 버튼 제거
                     {layer.id === "cctv" && cctvPurposes.length > 0 && (
                       <button
                         type="button"
@@ -162,18 +162,18 @@ export function MapView() {
                         />
                       </button>
                     )}
+                    */}
                   </span>
                   {mapLayers[layer.id] && (
                     <Check className="w-3 h-3 text-blue-600" />
                   )}
                 </button>
 
-                {/* CCTV 설치 목적별 서브메뉴 */}
+                {/* [MODIFY] 3. CCTV 목적별 필터 UI 숨김
                 {layer.id === "cctv" &&
                   isCctvSubMenuOpen &&
                   cctvPurposes.length > 0 && (
                     <div className="ml-3 pl-2 border-l-2 border-green-200 mb-1 flex flex-col gap-0.5">
-                      {/* 전체 선택/해제 */}
                       <button
                         type="button"
                         className="flex items-center justify-between px-2 py-1.5 text-[11px] font-semibold rounded hover:bg-gray-50 transition-colors w-full text-left text-gray-500"
@@ -215,6 +215,7 @@ export function MapView() {
                       })}
                     </div>
                   )}
+                */}
               </div>
             ))}
           </div>
@@ -273,13 +274,14 @@ export function MapView() {
               }
             />
           ))}
-
         {mapLayers.route && <RoutePolyline />}
+        {mapLayers.route && <HotspotMarkers />}{" "}
+        {/* 핫스팟도 라우트 레이어에 포함 */}
         {mapLayers.isochrone && <IsochronePolygon />}
         {mapLayers.cctv && (
           <CCTVMarkers
             onCenterChange={(latlng) => panToWithOffset(latlng.lat, latlng.lng)}
-            purposeFilter={cctvPurposeFilter}
+            // purposeFilter={cctvPurposeFilter} // [MODIFY] 3. 목적 필터 미사용
           />
         )}
         {mapLayers.transit && (

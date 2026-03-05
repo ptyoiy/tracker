@@ -1,11 +1,6 @@
 // src/features/observation-input/ui/ObservationForm.tsx
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { Plus } from "lucide-react";
-import { useEffect, useRef } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
 import { useIsochrone } from "@/features/map-view/lib/useIsochrone";
 import {
   analysisResultAtom,
@@ -14,11 +9,14 @@ import {
 import { Accordion } from "@/shared/ui/accordion";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
-import { Slider } from "@/shared/ui/slider";
 import { activeSectionAtom, bottomSheetSnapAtom } from "@/store/atoms";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { Plus } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { useFieldArray, useForm } from "react-hook-form";
 import { useAnalyzeQuery } from "../lib/useAnalyzeQuery";
 import {
-  committedFutureMinutesAtom,
   futureMinutesAtom,
   observationFormAtom,
   observationsAtom,
@@ -42,7 +40,6 @@ function toLocalDatetimeInput(iso?: string) {
 export function ObservationForm() {
   const [observationsAtomValue, setObservations] = useAtom(observationsAtom);
   const [currentFutureMinutes, setFutureMinutes] = useAtom(futureMinutesAtom);
-  const setCommittedMinutes = useSetAtom(committedFutureMinutesAtom);
   const analysisResult = useAtomValue(analysisResultAtom);
   const [lastParams, setLastParams] = useAtom(lastAnalysisParamsAtom);
 
@@ -231,6 +228,8 @@ export function ObservationForm() {
           </Button>
         </div>
 
+        {/* 
+        // [MODIFY] 2. 관측 지점 등록 시 "최대 이동 가능 범위" 기능 UI에서만 제거 (하단 Drawer 탭 제공)
         <div className="space-y-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
           <div className="flex justify-between items-center">
             <label
@@ -263,6 +262,7 @@ export function ObservationForm() {
             </p>
           )}
         </div>
+        */}
 
         <div className="pt-2">
           <Button

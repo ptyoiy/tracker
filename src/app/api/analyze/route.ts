@@ -8,6 +8,7 @@ import {
 import type {
   AnalyzeRequest,
   AnalyzeResponse,
+  HotspotSegment,
   RouteGroup,
   RouteInfo,
   RouteLeg,
@@ -16,6 +17,7 @@ import type {
 } from "@/types/analyze";
 import { format } from "date-fns";
 import { type NextRequest, NextResponse } from "next/server";
+import { extractHotspots } from "./lib/hotspot-analyzer";
 
 export async function POST(request: NextRequest) {
   try {
@@ -233,8 +235,18 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    const hotspotSegments: HotspotSegment[] = [];
+    for (const seg of segments) {
+      if (seg.candidateRoutes && seg.candidateRoutes.length >= 2) {
+        // Run hotspot extraction
+        const hots = extractHotspots(seg.candidateRoutes, seg.from);
+        hotspotSegments.push(...hots);
+      }
+    }
+
     const response: AnalyzeResponse = {
       segments,
+      hotspotSegments,
       fallbackUsed,
       errors: null,
     };

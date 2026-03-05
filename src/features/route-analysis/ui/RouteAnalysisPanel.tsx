@@ -13,6 +13,7 @@ import {
 import { useAtomValue } from "jotai";
 import { AlertCircle, ArrowRight, Navigation } from "lucide-react";
 import { analysisResultAtom, lastAnalysisParamsAtom } from "../model/atoms";
+import { HotspotList } from "./HotspotList"; // [NEW] 4. 핫스팟 리스트 추가
 import { RouteCard } from "./RouteCard";
 import { RouteGroupCard } from "./RouteGroupCard";
 
@@ -91,6 +92,9 @@ export function RouteListPanel() {
           관측 지점이 변경되었습니다. 정확한 분석을 위해 재분석이 필요합니다.
         </div>
       )}
+
+      {/* [NEW] 4. 겹침 경로(핫스팟) 리스트 */}
+      <HotspotList />
 
       <Accordion type="single" collapsible className="w-full space-y-3">
         {enrichedSegments.map((segment, idx) => {

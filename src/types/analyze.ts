@@ -51,6 +51,18 @@ export type SegmentAnalysis = {
   overlapGroups?: RouteGroup[]; // 신규 추가
 };
 
+export type HotspotSegment = {
+  id: string;
+  polyline: { lat: number; lng: number }[]; // 잘린 세그먼트 단위
+  anchorPoint: { lat: number; lng: number }; // 관측 지점에서 가장 가까운 시작점
+  coveredRouteIds: string[]; // 이 세그먼트를 지나는 RouteInfo ID 리스트
+  coverageRatio: number; // coveredRouteIds.length / totalRouteCount
+  lengthMeters: number;
+  timeWindow?: { start?: string; end?: string }; // 예상 통과 시간 범위 (옵션)
+  cctvCount?: number;
+  modes: Array<"walking" | "vehicle" | "transit">;
+};
+
 export type AnalyzeRequest = {
   observations: Observation[];
   futureMinutes: number;
@@ -58,6 +70,7 @@ export type AnalyzeRequest = {
 
 export type AnalyzeResponse = {
   segments: SegmentAnalysis[];
+  hotspotSegments?: HotspotSegment[]; // [NEW] 4. 겹침 경로 정보 추가
   fallbackUsed?: boolean;
   errors: string | null;
 };
