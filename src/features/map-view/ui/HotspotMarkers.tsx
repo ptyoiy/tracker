@@ -122,8 +122,8 @@ export function HotspotMarkers() {
                   <div className="flex items-center gap-1.5 mb-1 text-orange-600 font-bold text-xs pr-5">
                     {(() => {
                       const parts = hot.segmentId.split("-");
-                      const fromStr = parts[1];
-                      const toStr = parts[2];
+                      const fromStr = parts[0];
+                      const toStr = parts[1];
                       if (fromStr && toStr) {
                         return `${parseInt(fromStr) + 1} → ${parseInt(toStr) + 1} 관측 지점`;
                       }

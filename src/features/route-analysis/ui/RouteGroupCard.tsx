@@ -2,13 +2,16 @@
 "use client";
 
 import { hoveredRouteIdAtom } from "@/features/map-view/model/atoms";
+import { useAnalyzeQuery } from "@/features/observation-input/lib/useAnalyzeQuery";
 import { cn } from "@/shared/lib/utils";
 import { Badge } from "@/shared/ui/badge";
 import type { RouteGroup, RouteInfo } from "@/types/analyze";
 import { useAtom, useAtomValue } from "jotai";
 import { Check } from "lucide-react";
 import {
+  activeHotspotIdAtom,
   analysisResultAtom,
+  lastAnalysisParamsAtom,
   routeCctvCountAtom,
   selectedRouteIdsAtom,
 } from "../model/atoms";
@@ -24,6 +27,16 @@ export function RouteGroupCard({ group, candidateRoutes }: Props) {
   const cctvCounts = useAtomValue(routeCctvCountAtom);
   const analysisResult = useAtomValue(analysisResultAtom);
   const isStale = analysisResult.stale;
+
+  const lastParams = useAtomValue(lastAnalysisParamsAtom);
+  const { data: analyzeData } = useAnalyzeQuery(
+    lastParams?.observations,
+    lastParams?.futureMinutes,
+  );
+  const activeHotspotId = useAtomValue(activeHotspotIdAtom);
+  const activeHotspot = analyzeData?.hotspotSegments?.find(
+    (h) => h.id === activeHotspotId,
+  );
 
   // 이 그룹에 포함된 RouteInfo만 추출 (최적 경로 우선 정렬됨)
   const groupRoutes = candidateRoutes.filter((r) =>
@@ -99,6 +112,9 @@ export function RouteGroupCard({ group, candidateRoutes }: Props) {
 
           const busLeg = route.legs.find((l) => l.mode === "BUS");
 
+          const isHotspotActive =
+            !isStale && activeHotspot?.coveredRouteIds.includes(route.id);
+
           const toggleSelect = () => {
             if (isStale) return;
             setSelectedIds((prev) => {
@@ -118,12 +134,21 @@ export function RouteGroupCard({ group, candidateRoutes }: Props) {
               onMouseEnter={() => !isStale && setHoveredRouteId(route.id)}
               onMouseLeave={() => !isStale && setHoveredRouteId(null)}
               className={cn(
-                "group relative w-full flex items-center justify-between py-2 px-2.5 rounded-lg border-2 text-left transition-all overflow-hidden",
+                "group relative w-full flex flex-col gap-1 py-2 px-2.5 rounded-lg border-2 text-left transition-all overflow-hidden",
                 isSelected
                   ? "bg-blue-50/50 border-blue-500 shadow-sm"
-                  : "bg-white border-transparent hover:bg-gray-50 hover:border-gray-200",
+                  : isHotspotActive
+                    ? "bg-orange-50/50 border-orange-300 shadow-sm"
+                    : "bg-white border-transparent hover:bg-gray-50 hover:border-gray-200",
               )}
             >
+              {isHotspotActive && (
+                <div className="w-full flex justify-start mb-0.5">
+                  <span className="text-[10px] bg-orange-100/80 text-orange-700 font-bold px-1.5 py-0.5 rounded border border-orange-200 flex items-center gap-1 w-fit shadow-sm">
+                    🔥 선택된 겹침 경로 옵션
+                  </span>
+                </div>
+              )}
               {/* Selection Indicator Overlay */}
               {isSelected && !isStale && (
                 <div className="absolute top-0 right-0 p-[3px] bg-blue-500 rounded-bl flex items-center justify-center">
@@ -135,8 +160,8 @@ export function RouteGroupCard({ group, candidateRoutes }: Props) {
                   />
                 </div>
               )}
-              <div className="flex items-center gap-3">
-                <div className="flex flex-col gap-0.5">
+              <div className="flex items-center gap-3 w-full">
+                <div className="flex flex-col gap-0.5 w-full">
                   <span className="text-[12px] font-bold text-gray-800 flex items-center gap-1.5">
                     옵션 {idx + 1}
                     {busLeg?.route && (
