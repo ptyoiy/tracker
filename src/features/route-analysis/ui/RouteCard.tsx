@@ -1,13 +1,16 @@
 // src/features/route-analysis/ui/RouteCard.tsx
 "use client";
 
+import { useAnalyzeQuery } from "@/features/observation-input/lib/useAnalyzeQuery";
 import { cn } from "@/shared/lib/utils";
 import { Badge } from "@/shared/ui/badge";
 import type { RouteInfo } from "@/types/analyze";
 import { useAtom, useAtomValue } from "jotai";
 import { Check, Repeat } from "lucide-react";
 import {
+  activeHotspotIdAtom,
   analysisResultAtom,
+  lastAnalysisParamsAtom,
   routeCctvCountAtom,
   selectedRouteIdsAtom,
 } from "../model/atoms";
@@ -67,6 +70,19 @@ export function RouteCard({ route, index }: Props) {
   const cctvCount = cctvCounts[route.id] ?? 0;
   const isStale = analysisResult.stale;
 
+  const lastParams = useAtomValue(lastAnalysisParamsAtom);
+  const { data: analyzeData } = useAnalyzeQuery(
+    lastParams?.observations,
+    lastParams?.futureMinutes,
+  );
+  const activeHotspotId = useAtomValue(activeHotspotIdAtom);
+  const activeHotspot = analyzeData?.hotspotSegments?.find(
+    (h) => h.id === activeHotspotId,
+  );
+
+  const isHotspotActive =
+    !isStale && activeHotspot?.coveredRouteIds.includes(route.id);
+
   const toggleSelect = () => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -102,12 +118,21 @@ export function RouteCard({ route, index }: Props) {
         stripeColor,
         isSelected
           ? "border-y-blue-500 border-r-blue-500 bg-blue-50/50 shadow-md"
-          : "border-y-gray-100 border-r-gray-100 bg-white hover:border-y-blue-200 hover:border-r-blue-200 hover:shadow-sm",
+          : isHotspotActive
+            ? "border-y-orange-300 border-r-orange-300 bg-orange-50/50 shadow-sm"
+            : "border-y-gray-100 border-r-gray-100 bg-white hover:border-y-blue-200 hover:border-r-blue-200 hover:shadow-sm",
         isStale &&
           "opacity-60 grayscale-[0.5] border-y-gray-100 border-r-gray-100 hover:border-y-gray-100 hover:border-r-gray-100 hover:shadow-none bg-gray-50/50 cursor-default border-l-gray-300",
       )}
       onClick={toggleSelect}
     >
+      {isHotspotActive && (
+        <div className="w-full flex justify-start -mb-1 relative z-10">
+          <span className="text-[10px] bg-orange-100/80 text-orange-700 font-bold px-1.5 py-0.5 rounded border border-orange-200 flex items-center gap-1 w-fit shadow-sm">
+            🔥 선택된 겹침 경로 옵션
+          </span>
+        </div>
+      )}
       {/* Selection Indicator Overlay */}
       {isSelected && !isStale && (
         <div className="absolute top-0 right-0 p-1 bg-blue-500 rounded-bl-lg shadow-sm">
