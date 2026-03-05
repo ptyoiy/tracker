@@ -65,10 +65,10 @@ function DrawerContent({
         {...props}
       >
         <DrawerPrimitive.Handle
-          className="mx-auto mt-1 mb-1 flex items-center justify-center p-3 w-20 cursor-grab active:cursor-grabbing outline-none"
+          className="mx-auto mt-1 mb-2 flex items-center justify-center p-3 w-full max-w-sm cursor-grab active:cursor-grabbing outline-none group"
           aria-label="서랍 손잡이"
         >
-          <div className="h-1.5 w-16 rounded-full bg-gray-300 transition-colors duration-200 group-hover:bg-gray-400 group-active:bg-gray-500" />
+          <div className="h-1.5 w-[35vw] max-w-[150px] rounded-full bg-gray-300 transition-colors duration-200 group-hover:bg-gray-400 group-active:bg-gray-500" />
         </DrawerPrimitive.Handle>
         {children}
       </DrawerPrimitive.Content>
