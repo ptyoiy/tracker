@@ -1,8 +1,5 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { useAtomValue } from "jotai";
-import { useMemo } from "react";
 import { viewportAtom } from "@/features/map-view/model/atoms";
 import { useAnalyzeQuery } from "@/features/observation-input/lib/useAnalyzeQuery";
 import {
@@ -10,6 +7,9 @@ import {
   selectedRouteIdsAtom,
 } from "@/features/route-analysis/model/atoms";
 import { cctvQueries } from "@/shared/api/queries";
+import { useQuery } from "@tanstack/react-query";
+import { useAtomValue } from "jotai";
+import { useMemo } from "react";
 import {
   allCctvAtom,
   cctvSearchCenterAtom,
@@ -52,15 +52,25 @@ export function useFilteredCctv() {
   const routeCctv = useMemo(() => {
     if (selectedRoutes.length === 0 || !allCctv.length) return [];
 
-    const polyline = selectedRoutes
-      .flatMap((route) => route.legs.flatMap((leg) => leg.polyline))
-      .map((p) => [p.lng, p.lat] as [number, number]);
+    const uniqueCctvs = new Map<string, (typeof allCctv)[0]>();
 
-    let candidates = filterCctvByContext(allCctv, {
-      type: "ROUTE",
-      polyline,
-      bufferMeters: 100,
-    });
+    for (const route of selectedRoutes) {
+      const polyline = route.legs
+        .flatMap((leg) => leg.polyline)
+        .map((p) => [p.lng, p.lat] as [number, number]);
+
+      const nearCctvs = filterCctvByContext(allCctv, {
+        type: "ROUTE",
+        polyline,
+        bufferMeters: 100,
+      });
+
+      for (const c of nearCctvs) {
+        uniqueCctvs.set(c.id, c);
+      }
+    }
+
+    let candidates = Array.from(uniqueCctvs.values());
 
     // 뷰포트 필터링은 성능을 위해 유지하되, 너무 빡빡하지 않게 적용
     if (viewport) {

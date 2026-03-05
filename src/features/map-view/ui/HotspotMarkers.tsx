@@ -7,7 +7,7 @@ import {
 } from "@/features/route-analysis/model/atoms";
 import { cn } from "@/shared/lib/utils";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { Flame, X } from "lucide-react";
+import { X } from "lucide-react";
 import { CustomOverlayMap, Polyline } from "react-kakao-maps-sdk";
 import { activePopupAtom } from "../model/atoms";
 
@@ -84,7 +84,14 @@ export function HotspotMarkers() {
                         : "border-orange-400",
                     )}
                   >
-                    <span className="text-sm">🔥</span>
+                    <span
+                      className={cn(
+                        "text-[10px] font-black",
+                        isActive ? "text-orange-600" : "text-gray-700",
+                      )}
+                    >
+                      {Math.round(hot.coverageRatio * 100)}%
+                    </span>
                   </div>
                 </button>
               </CustomOverlayMap>
@@ -113,10 +120,21 @@ export function HotspotMarkers() {
                     <X className="w-3.5 h-3.5" />
                   </button>
                   <div className="flex items-center gap-1.5 mb-1 text-orange-600 font-bold text-xs pr-5">
-                    <Flame className="w-3.5 h-3.5" />
-                    {Math.round(hot.coverageRatio * 100)}% 경로 겹침
+                    {(() => {
+                      const parts = hot.segmentId.split("-");
+                      const fromStr = parts[1];
+                      const toStr = parts[2];
+                      if (fromStr && toStr) {
+                        return `${parseInt(fromStr) + 1} → ${parseInt(toStr) + 1} 관측 지점`;
+                      }
+                      return "겹침 구간";
+                    })()}
                   </div>
-                  <div className="text-[10px] text-gray-600 space-y-0.5 mt-1.5 pt-1.5 border-t border-gray-100">
+                  <div className="text-[10px] text-gray-600 space-y-1 mt-1.5 pt-1.5 border-t border-gray-100">
+                    <div className="flex justify-between items-center bg-orange-50 px-1.5 py-0.5 rounded text-orange-700 font-bold mb-1">
+                      <span>겹침 비율:</span>
+                      <span>{Math.round(hot.coverageRatio * 100)}%</span>
+                    </div>
                     <div className="flex justify-between">
                       <span>길이:</span>
                       <span className="font-medium text-gray-900">
@@ -126,7 +144,7 @@ export function HotspotMarkers() {
                     <div className="flex justify-between">
                       <span>경로:</span>
                       <span className="font-medium text-gray-900">
-                        {hot.coveredRouteIds.length}개 통과
+                        {hot.coveredRouteIds.length}개 경로 겹침
                       </span>
                     </div>
                     <div className="flex justify-between">
