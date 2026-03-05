@@ -62,6 +62,12 @@ export async function POST(req: Request) {
     // 모드 판별
     let mode: "realtime" | "timetable" = "realtime";
     const refDate = new Date(referenceTime);
+    // KST (UTC+9) 기준 Date 생성 — 서버 TZ에 관계없이 올바른 요일/시간 계산
+    const kstDate = new Date(
+      refDate.getTime() +
+        9 * 60 * 60 * 1000 +
+        refDate.getTimezoneOffset() * 60 * 1000,
+    );
     const now = new Date();
     const diffMs = Math.abs(refDate.getTime() - now.getTime());
     const diffMins = diffMs / (1000 * 60);
@@ -74,8 +80,8 @@ export async function POST(req: Request) {
 
     // 병렬 처리: 버스와 지하철 정보 동시 획득
     const [busResult, subwayResult] = await Promise.all([
-      fetchBusData(lat, lng, busRadius, mode, refDate),
-      fetchSubwayData(lat, lng, subwayRadius, mode, refDate),
+      fetchBusData(lat, lng, busRadius, mode, kstDate),
+      fetchSubwayData(lat, lng, subwayRadius, mode, kstDate),
     ]);
 
     const response: TransitNearbyResponse = {

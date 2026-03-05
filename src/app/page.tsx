@@ -95,6 +95,7 @@ export default function Home() {
           setActiveSnapPoint={(sp) => sp && setSnap(sp)}
           modal={false}
           dismissible={false}
+          handleOnly={true}
           fadeFromIndex={2}
         >
           <DrawerContent className="z-50 shadow-[0_-8px_30px_rgb(0,0,0,0.12)] select-none flex flex-col outline-none border-t border-gray-200 h-full overflow-hidden">

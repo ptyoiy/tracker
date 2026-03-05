@@ -6,7 +6,7 @@ import * as turf from "@turf/turf";
 const RESAMPLE_INTERVAL_M = 30; // 30m
 const PROXIMITY_THRESHOLD_KM = 0.05; // 50m
 const COVERAGE_THRESHOLD = 0.5; // 50%
-const MAX_HOTSPOT_LENGTH_M = 250; // 250m
+const MAX_HOTSPOT_LENGTH_M = 350; // 350m
 
 type ResampledPoint = {
   lat: number;
@@ -200,9 +200,7 @@ export function extractHotspots(
 
       if (minDist <= PROXIMITY_THRESHOLD_KM) {
         isDuplicate = true;
-        // Merge routes and modes
-        for (const r of cand.coveredRouteIds) finalCand.coveredRouteIds.add(r);
-        for (const m of cand.modes) finalCand.modes.add(m);
+        // 중복인 경우 단순 스킵 (머지하지 않음)
         break;
       }
     }
