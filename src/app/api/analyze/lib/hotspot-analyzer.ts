@@ -62,6 +62,7 @@ function resamplePolyline(
 export function extractHotspots(
   candidateRoutes: RouteInfo[],
   fromObs: Observation,
+  segmentId: string,
 ): HotspotSegment[] {
   const totalRouteCount = candidateRoutes.length;
   if (totalRouteCount < 2) return [];
@@ -249,6 +250,7 @@ export function extractHotspots(
 
       splitHotspots.push({
         id: crypto.randomUUID(),
+        segmentId,
         polyline: subPoly,
         anchorPoint: anchor,
         coveredRouteIds: Array.from(hot.coveredRouteIds),

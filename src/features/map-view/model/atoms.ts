@@ -23,6 +23,7 @@ export type ActivePopup =
   | { type: "observation"; index: number }
   | { type: "transit-bus"; stationId: string }
   | { type: "transit-subway"; stationCode: string }
+  | { type: "hotspot"; id: string }
   | null;
 
 export type MapLayerVisibility = {
@@ -31,6 +32,7 @@ export type MapLayerVisibility = {
   route: boolean;
   observations: boolean;
   transit: boolean;
+  hotspot: boolean;
 };
 
 export type IsochroneSelection = {
@@ -55,6 +57,7 @@ export const mapLayersAtom = atom<MapLayerVisibility>({
   route: true,
   observations: true,
   transit: true,
+  hotspot: true,
 });
 
 // 별도로 참조 — 순환 의존 방지를 위해 여기서 직접 선언

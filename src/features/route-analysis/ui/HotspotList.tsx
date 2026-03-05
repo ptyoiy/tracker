@@ -11,49 +11,71 @@ import {
   selectedRouteIdsAtom,
 } from "../model/atoms";
 
-export function HotspotList() {
+type Props = {
+  segmentId: string;
+};
+
+export function HotspotList({ segmentId }: Props) {
   const lastParams = useAtomValue(lastAnalysisParamsAtom);
   const { data } = useAnalyzeQuery(
     lastParams?.observations,
     lastParams?.futureMinutes,
   );
   const [activeHotspotId, setActiveHotspotId] = useAtom(activeHotspotIdAtom);
-  const setSelectedRouteIds = useSetAtom(selectedRouteIdsAtom);
+  const selectedRouteIds = useAtomValue(selectedRouteIdsAtom);
   const setMapCenter = useSetAtom(mapCenterCommandAtom);
 
-  const hotspots = data?.hotspotSegments ?? [];
-  if (hotspots.length === 0) return null;
+  const allHotspots = data?.hotspotSegments ?? [];
 
-  // 상위 7개 (coverageRatio > cctvCount > length 정렬)
-  const topHotspots = [...hotspots]
+  // 이 세그먼트에 해당하는 겹침 경로만 필터링
+  const segmentHotspots = allHotspots.filter((h) => h.segmentId === segmentId);
+  if (segmentHotspots.length === 0) return null;
+
+  // 사용자가 선택한 경로가 있으면 해당 경로들의 겹침을 우선 표시
+  const hasSelection = selectedRouteIds.size > 0;
+  const selectedSet = selectedRouteIds;
+
+  const sortedHotspots = [...segmentHotspots]
+    .map((h) => {
+      // 선택된 경로와 겹치는 비율 계산
+      const selectedOverlap = hasSelection
+        ? h.coveredRouteIds.filter((rid) => selectedSet.has(rid)).length
+        : 0;
+      const isSelectedBased = hasSelection && selectedOverlap >= 2;
+      return { ...h, selectedOverlap, isSelectedBased };
+    })
     .sort((a, b) => {
+      // 선택 경로 기반 우선
+      if (a.isSelectedBased !== b.isSelectedBased)
+        return a.isSelectedBased ? -1 : 1;
       if (b.coverageRatio !== a.coverageRatio)
         return b.coverageRatio - a.coverageRatio;
-      const bCctv = b.cctvCount ?? 0;
-      const aCctv = a.cctvCount ?? 0;
-      if (bCctv !== aCctv) return bCctv - aCctv;
       return b.lengthMeters - a.lengthMeters;
     })
     .slice(0, 7);
 
   return (
-    <div className="mb-4">
-      <div className="flex items-center gap-1.5 mb-2 px-1">
-        <Flame className="w-4 h-4 text-orange-500" />
-        <h3 className="text-sm font-bold text-gray-800">겹침 경로 (핫스팟)</h3>
+    <div className="mt-2 mb-1">
+      <div className="flex items-center gap-1.5 mb-1.5 px-0.5">
+        <Flame className="w-3.5 h-3.5 text-orange-500" />
+        <span className="text-[11px] font-bold text-gray-600">겹침 경로</span>
       </div>
-      <div className="flex gap-2.5 overflow-x-auto pb-2 snap-x snap-mandatory px-1 custom-scrollbar">
-        {topHotspots.map((hot) => {
+      <div className="flex gap-2 overflow-x-auto pb-1.5 snap-x snap-mandatory custom-scrollbar">
+        {sortedHotspots.map((hot) => {
           const isActive = activeHotspotId === hot.id;
           return (
             <button
               key={hot.id}
               type="button"
               className={cn(
-                "snap-center shrink-0 min-w-[200px] text-left p-3 rounded-xl border transition-all duration-200 cursor-pointer shadow-sm relative overflow-hidden",
-                isActive
-                  ? "border-orange-500 ring-1 ring-orange-500 bg-orange-50"
-                  : "border-orange-200 bg-white hover:border-orange-300 hover:bg-orange-50/50",
+                "snap-center shrink-0 min-w-[170px] text-left p-2.5 rounded-lg border transition-all duration-200 cursor-pointer shadow-sm relative overflow-hidden",
+                hot.isSelectedBased
+                  ? isActive
+                    ? "border-blue-500 ring-1 ring-blue-400 bg-blue-50"
+                    : "border-blue-200 bg-blue-50/30 hover:border-blue-300"
+                  : isActive
+                    ? "border-orange-500 ring-1 ring-orange-500 bg-orange-50"
+                    : "border-orange-200 bg-white hover:border-orange-300 hover:bg-orange-50/50",
               )}
               onClick={() => {
                 if (isActive) {
@@ -64,47 +86,43 @@ export function HotspotList() {
                     setMapCenter({
                       lat: hot.anchorPoint.lat,
                       lng: hot.anchorPoint.lng,
-                      yOffset: window.innerHeight * 0.25, // offset UI padding
+                      yOffset: window.innerHeight * 0.25,
                     });
                   }
-                  // 연관된 경로 강조
-                  setSelectedRouteIds(new Set(hot.coveredRouteIds));
                 }
               }}
             >
               {isActive && (
-                <div className="absolute top-0 left-0 w-1 h-full bg-orange-500" />
+                <div
+                  className={cn(
+                    "absolute top-0 left-0 w-1 h-full",
+                    hot.isSelectedBased ? "bg-blue-500" : "bg-orange-500",
+                  )}
+                />
               )}
               <div className="flex justify-between items-start mb-1">
-                <span className="text-[11px] font-bold text-orange-600 bg-orange-100 px-1.5 py-0.5 rounded">
+                <span
+                  className={cn(
+                    "text-[10px] font-bold px-1.5 py-0.5 rounded",
+                    hot.isSelectedBased
+                      ? "text-blue-600 bg-blue-100"
+                      : "text-orange-600 bg-orange-100",
+                  )}
+                >
                   {Math.round(hot.coverageRatio * 100)}% 겹침
                 </span>
                 <span className="text-[10px] text-gray-500 font-medium">
                   {Math.round(hot.lengthMeters)}m
                 </span>
               </div>
-              <div className="text-xs font-bold text-gray-800 mt-1 flex items-center gap-1">
+              <div className="text-[11px] font-bold text-gray-800 mt-0.5">
                 {hot.coveredRouteIds.length}개 경로 통과
               </div>
-              <div className="flex gap-1.5 mt-2 flex-wrap">
-                {hot.modes.map((mode) => (
-                  <span
-                    key={mode}
-                    className="text-[10px] bg-white border border-gray-200 shadow-sm px-1.5 py-[1px] rounded flex items-center text-gray-600"
-                  >
-                    {mode === "walking"
-                      ? "🚶"
-                      : mode === "transit"
-                        ? "🚌"
-                        : "🚗"}{" "}
-                    {mode === "walking"
-                      ? "도보"
-                      : mode === "transit"
-                        ? "대중교통"
-                        : "차량"}
-                  </span>
-                ))}
-              </div>
+              {hot.isSelectedBased && (
+                <div className="text-[9px] text-blue-500 font-bold mt-0.5">
+                  선택 경로 기반
+                </div>
+              )}
             </button>
           );
         })}

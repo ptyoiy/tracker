@@ -53,6 +53,7 @@ export type SegmentAnalysis = {
 
 export type HotspotSegment = {
   id: string;
+  segmentId: string; // 어떤 세그먼트(구간)에 속하는지
   polyline: { lat: number; lng: number }[]; // 잘린 세그먼트 단위
   anchorPoint: { lat: number; lng: number }; // 관측 지점에서 가장 가까운 시작점
   coveredRouteIds: string[]; // 이 세그먼트를 지나는 RouteInfo ID 리스트

@@ -6,9 +6,10 @@ import {
   lastAnalysisParamsAtom,
 } from "@/features/route-analysis/model/atoms";
 import { cn } from "@/shared/lib/utils";
-import { useAtom, useAtomValue } from "jotai";
-import { Flame } from "lucide-react";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { Flame, X } from "lucide-react";
 import { CustomOverlayMap, Polyline } from "react-kakao-maps-sdk";
+import { activePopupAtom } from "../model/atoms";
 
 export function HotspotMarkers() {
   const lastParams = useAtomValue(lastAnalysisParamsAtom);
@@ -17,6 +18,7 @@ export function HotspotMarkers() {
     lastParams?.futureMinutes,
   );
   const [activeHotspotId, setActiveHotspotId] = useAtom(activeHotspotIdAtom);
+  const setActivePopup = useSetAtom(activePopupAtom);
 
   const hotspots = data?.hotspotSegments ?? [];
   if (hotspots.length === 0) return null;
@@ -28,16 +30,16 @@ export function HotspotMarkers() {
 
         return (
           <div key={`hotspot-${hot.id}`}>
-            {/* 핫스팟 세그먼트 라인 */}
+            {/* 겹침 경로 세그먼트 라인 */}
             <Polyline
               path={hot.polyline}
               strokeWeight={isActive ? 12 : 8}
-              strokeColor="#f97316" // orange-500
+              strokeColor="#f97316"
               strokeOpacity={isActive ? 0.9 : 0.6}
               strokeStyle="solid"
               zIndex={isActive ? 45 : 35}
             />
-            {/* 내부 점선 효과 (바 모양) */}
+            {/* 내부 점선 효과 */}
             <Polyline
               path={hot.polyline}
               strokeWeight={isActive ? 6 : 4}
@@ -47,7 +49,7 @@ export function HotspotMarkers() {
               zIndex={isActive ? 46 : 36}
             />
 
-            {/* 핫스팟 앵커 마커 */}
+            {/* 앵커 마커 (텍스트 없이 아이콘만) */}
             {hot.anchorPoint && (
               <CustomOverlayMap
                 position={{
@@ -61,47 +63,70 @@ export function HotspotMarkers() {
                 <button
                   type="button"
                   className={cn(
-                    "flex flex-col items-center group -mt-2 transition-transform cursor-pointer",
-                    isActive ? "scale-110" : "scale-100 hover:scale-105",
+                    "flex flex-col items-center group transition-transform cursor-pointer",
+                    isActive ? "scale-125" : "scale-100 hover:scale-110",
                   )}
-                  onClick={() => setActiveHotspotId(isActive ? null : hot.id)}
+                  onClick={() => {
+                    const nextId = isActive ? null : hot.id;
+                    setActiveHotspotId(nextId);
+                    if (nextId) {
+                      setActivePopup({ type: "hotspot", id: nextId });
+                    } else {
+                      setActivePopup(null);
+                    }
+                  }}
                 >
-                  <div className="bg-orange-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap mb-0.5 relative z-10 flex items-center gap-1">
-                    <Flame className="w-3 h-3 text-orange-200" />
-                    {hot.coveredRouteIds.length}개 경로 겹침
-                  </div>
                   <div
                     className={cn(
-                      "w-5 h-5 bg-white border-2 rounded-full flex items-center justify-center shadow-md relative z-10",
-                      isActive ? "border-orange-600" : "border-orange-400",
+                      "w-7 h-7 bg-white border-2 rounded-full flex items-center justify-center shadow-lg relative z-10",
+                      isActive
+                        ? "border-orange-600 ring-2 ring-orange-300"
+                        : "border-orange-400",
                     )}
                   >
-                    <span className="text-[10px]">🔥</span>
+                    <span className="text-sm">🔥</span>
                   </div>
                 </button>
               </CustomOverlayMap>
             )}
 
-            {/* 활성 상태 툴팁 */}
+            {/* 활성 상태 팝업 (닫기 버튼 포함) */}
             {isActive && hot.anchorPoint && (
               <CustomOverlayMap
                 position={{
                   lat: hot.anchorPoint.lat,
                   lng: hot.anchorPoint.lng,
                 }}
-                yAnchor={2.5}
+                yAnchor={2.2}
                 zIndex={100}
+                clickable
               >
-                <div className="bg-white rounded-lg shadow-xl border border-orange-200 px-3 py-2 min-w-[150px] pointer-events-none">
-                  <div className="flex items-center gap-1.5 mb-1 text-orange-600 font-bold text-xs">
+                <div className="bg-white rounded-lg shadow-xl border border-orange-200 px-3 py-2 min-w-[150px] relative">
+                  <button
+                    type="button"
+                    className="absolute top-1.5 right-1.5 text-gray-400 hover:text-gray-600 z-10"
+                    onClick={() => {
+                      setActiveHotspotId(null);
+                      setActivePopup(null);
+                    }}
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                  <div className="flex items-center gap-1.5 mb-1 text-orange-600 font-bold text-xs pr-5">
                     <Flame className="w-3.5 h-3.5" />
-                    {Math.round(hot.coverageRatio * 100)}% 통과 구간
+                    {Math.round(hot.coverageRatio * 100)}% 경로 겹침
                   </div>
                   <div className="text-[10px] text-gray-600 space-y-0.5 mt-1.5 pt-1.5 border-t border-gray-100">
                     <div className="flex justify-between">
                       <span>길이:</span>
                       <span className="font-medium text-gray-900">
                         {Math.round(hot.lengthMeters)}m
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>경로:</span>
+                      <span className="font-medium text-gray-900">
+                        {hot.coveredRouteIds.length}개 통과
                       </span>
                     </div>
                     <div className="flex justify-between">

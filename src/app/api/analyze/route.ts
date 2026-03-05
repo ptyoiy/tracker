@@ -238,8 +238,7 @@ export async function POST(request: NextRequest) {
     const hotspotSegments: HotspotSegment[] = [];
     for (const seg of segments) {
       if (seg.candidateRoutes && seg.candidateRoutes.length >= 2) {
-        // Run hotspot extraction
-        const hots = extractHotspots(seg.candidateRoutes, seg.from);
+        const hots = extractHotspots(seg.candidateRoutes, seg.from, seg.id);
         hotspotSegments.push(...hots);
       }
     }

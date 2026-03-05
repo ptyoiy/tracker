@@ -87,19 +87,34 @@ export function RouteGroupCard({ group, candidateRoutes }: Props) {
           </span>
         </div>
 
-        <div className="text-[11px] text-gray-500 font-medium flex items-center gap-1.5 mt-0.5">
-          <span className="flex items-center gap-0.5">
-            {representativeRoute?.legs.map((leg, i) => (
+        <div className="text-[11px] text-gray-500 font-medium flex items-center gap-1 mt-0.5 flex-wrap">
+          {representativeRoute?.legs
+            .filter((leg) => leg.durationSeconds > 0)
+            .map((leg, i, filteredLegs) => (
               <span key={i.toString()} className="flex items-center gap-0.5">
-                {getLegIcon(leg.mode)}
-                {i < representativeRoute.legs.length - 1 && (
+                <span
+                  className={cn(
+                    "flex items-center gap-0.5 rounded px-1 py-0.5",
+                    leg.mode === "WALK"
+                      ? "bg-gray-100 text-gray-500"
+                      : leg.mode === "BUS"
+                        ? "bg-blue-50 text-blue-700 border border-blue-100"
+                        : "bg-green-50 text-green-700 border border-green-100",
+                  )}
+                >
+                  {getLegIcon(leg.mode)}
+                  {leg.route && <span className="font-bold">{leg.route}</span>}
+                  <span className="opacity-70">
+                    {Math.round(leg.durationSeconds / 60)}분
+                  </span>
+                </span>
+                {i < filteredLegs.length - 1 && (
                   <span className="opacity-40">→</span>
                 )}
               </span>
             ))}
-          </span>
-          <span className="opacity-40">|</span>
-          <span>{durationSummary}</span>
+          <span className="opacity-40 ml-1">|</span>
+          <span>총 {durationSummary}</span>
           <span className="opacity-40">|</span>
           <span>CCTV {cctvSummary}</span>
         </div>

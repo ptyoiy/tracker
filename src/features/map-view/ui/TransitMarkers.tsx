@@ -108,11 +108,34 @@ export function TransitMarkers({
     filteredNearbyStations.filter((s) => s.type === "subway").length,
     ")",
   );
-  // 현재 열려있는 팝업 정보
-  const activeBusStation =
-    activePopup?.type === "transit-bus" && result
-      ? result.bus.stations.find((s) => s.stationId === activePopup.stationId)
-      : null;
+  // 현재 열려있는 팝업 정보 (상세 결과 + nearby 폴백)
+  const activeBusStation = (() => {
+    if (activePopup?.type !== "transit-bus") return null;
+    // 1) 상세 조회 결과에서 찾기
+    if (result) {
+      const found = result.bus.stations.find(
+        (s) => s.stationId === activePopup.stationId,
+      );
+      if (found) return found;
+    }
+    // 2) nearby에서 폴백 (최소 정보로 팝업 표시)
+    const nearbyMatch = nearbyStations.find(
+      (s) => s.type === "bus" && s.stationId === activePopup.stationId,
+    );
+    if (nearbyMatch) {
+      return {
+        stationId: nearbyMatch.stationId,
+        arsId: nearbyMatch.stationId,
+        stationName: nearbyMatch.name,
+        lat: nearbyMatch.lat,
+        lng: nearbyMatch.lng,
+        distance: nearbyMatch.distance ?? 0,
+        routes: [],
+      };
+    }
+    return null;
+  })();
+
   const activeSubwayStation =
     activePopup?.type === "transit-subway" && result
       ? result.subway.stations.find(
@@ -152,6 +175,10 @@ export function TransitMarkers({
                 className="flex flex-col items-center group -mt-1 hover:scale-110 transition-transform opacity-75 hover:opacity-100"
                 onClick={() => {
                   onCenterChange?.({ lat: station.lat, lng: station.lng });
+                  setActivePopup({
+                    type: "transit-bus",
+                    stationId: station.stationId,
+                  });
                 }}
               >
                 {/* [MODIFY] 3. 버스 정류장 마커에서 이름 숨김

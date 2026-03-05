@@ -131,17 +131,18 @@ export function MapView() {
                 label: "대중교통 현황",
                 color: "text-orange-500",
               },
+              {
+                id: "hotspot" as const,
+                label: "겹침 경로",
+                color: "text-orange-600",
+              },
             ].map((layer) => (
               <div key={layer.id}>
                 <button
                   type="button"
                   className="flex items-center justify-between px-3 py-2 text-xs font-medium rounded-md hover:bg-gray-50 transition-colors w-full text-left"
                   onClick={() => {
-                    if (layer.id === "cctv") {
-                      toggleLayer(layer.id);
-                    } else {
-                      toggleLayer(layer.id);
-                    }
+                    toggleLayer(layer.id);
                   }}
                 >
                   <span className={`flex items-center gap-1.5 ${layer.color}`}>
@@ -275,7 +276,7 @@ export function MapView() {
             />
           ))}
         {mapLayers.route && <RoutePolyline />}
-        {mapLayers.route && <HotspotMarkers />}{" "}
+        {mapLayers.hotspot && <HotspotMarkers />}{" "}
         {/* 핫스팟도 라우트 레이어에 포함 */}
         {mapLayers.isochrone && <IsochronePolygon />}
         {mapLayers.cctv && (

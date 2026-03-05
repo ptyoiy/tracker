@@ -93,9 +93,6 @@ export function RouteListPanel() {
         </div>
       )}
 
-      {/* [NEW] 4. 겹침 경로(핫스팟) 리스트 */}
-      <HotspotList />
-
       <Accordion type="single" collapsible className="w-full space-y-3">
         {enrichedSegments.map((segment, idx) => {
           const routes = segment.candidateRoutes ?? [];
@@ -168,6 +165,9 @@ export function RouteListPanel() {
               </AccordionTrigger>
 
               <AccordionContent className="pt-0 pb-4">
+                {/* 겹침 경로 (세그먼트별) */}
+                <HotspotList segmentId={segment.id} />
+
                 <div className="grid gap-2.5 pt-2 border-t border-gray-50">
                   {(() => {
                     if (routes.length === 0) {
