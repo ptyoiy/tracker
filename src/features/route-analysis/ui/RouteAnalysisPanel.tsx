@@ -12,7 +12,11 @@ import {
 } from "@/shared/ui/accordion";
 import { useAtomValue } from "jotai";
 import { AlertCircle, ArrowRight, Navigation } from "lucide-react";
-import { analysisResultAtom, lastAnalysisParamsAtom } from "../model/atoms";
+import {
+  activeHotspotIdAtom,
+  analysisResultAtom,
+  lastAnalysisParamsAtom,
+} from "../model/atoms";
 import { HotspotList } from "./HotspotList"; // [NEW] 4. 핫스팟 리스트 추가
 import { RouteCard } from "./RouteCard";
 import { RouteGroupCard } from "./RouteGroupCard";
@@ -21,6 +25,7 @@ export function RouteListPanel() {
   const lastParams = useAtomValue(lastAnalysisParamsAtom);
   const analysisResult = useAtomValue(analysisResultAtom);
   const currentObservations = useAtomValue(observationsAtom);
+  const activeHotspotId = useAtomValue(activeHotspotIdAtom);
 
   const {
     data,
@@ -178,19 +183,38 @@ export function RouteListPanel() {
                       );
                     }
 
-                    const elements: React.ReactNode[] = [];
+                    const elements: {
+                      priority: number;
+                      node: React.ReactNode;
+                    }[] = [];
                     const renderedRouteIds = new Set<string>();
+
+                    let activeCoveredIds = new Set<string>();
+                    if (activeHotspotId && data?.hotspotSegments) {
+                      const hot = data.hotspotSegments.find(
+                        (h) => h.id === activeHotspotId,
+                      );
+                      if (hot) {
+                        activeCoveredIds = new Set(hot.coveredRouteIds);
+                      }
+                    }
 
                     // 1. 그룹 렌더링
                     if (segment.overlapGroups) {
                       segment.overlapGroups.forEach((group) => {
-                        elements.push(
-                          <RouteGroupCard
-                            key={group.id}
-                            group={group}
-                            candidateRoutes={routes}
-                          />,
+                        const isHighlighted = group.memberRouteIds.some((id) =>
+                          activeCoveredIds.has(id),
                         );
+                        elements.push({
+                          priority: isHighlighted ? 1 : 0,
+                          node: (
+                            <RouteGroupCard
+                              key={group.id}
+                              group={group}
+                              candidateRoutes={routes}
+                            />
+                          ),
+                        });
                         group.memberRouteIds.forEach((id) => {
                           renderedRouteIds.add(id);
                         });
@@ -200,17 +224,24 @@ export function RouteListPanel() {
                     // 2. 그룹에 속하지 않은 개별 라우트 렌더링
                     routes.forEach((route, routeIdx) => {
                       if (!renderedRouteIds.has(route.id)) {
-                        elements.push(
-                          <RouteCard
-                            key={route.id}
-                            route={route}
-                            index={routeIdx}
-                          />,
-                        );
+                        const isHighlighted = activeCoveredIds.has(route.id);
+                        elements.push({
+                          priority: isHighlighted ? 1 : 0,
+                          node: (
+                            <RouteCard
+                              key={route.id}
+                              route={route}
+                              index={routeIdx}
+                            />
+                          ),
+                        });
                       }
                     });
 
-                    return elements;
+                    // priority 기준으로 내림차순 정렬 (높은 우선순위가 상단)
+                    elements.sort((a, b) => b.priority - a.priority);
+
+                    return elements.map((e) => e.node);
                   })()}
                 </div>
               </AccordionContent>
