@@ -5,7 +5,6 @@ import * as turf from "@turf/turf";
 
 const RESAMPLE_INTERVAL_M = 30; // 30m
 const PROXIMITY_THRESHOLD_KM = 0.05; // 50m
-const MAX_HOTSPOT_LENGTH_M = 200; // 200m
 
 type ResampledPoint = {
   lat: number;
@@ -209,85 +208,62 @@ export function extractHotspots(
     }
   }
 
-  // 5. Split long hotspots into chunks
+  // 5. Build final hotspots without chunking
+  // 하나의 거대한 연속 구간을 자르지 않고そのまま 반환하되, 점유율은 재계산
   const splitHotspots: HotspotSegment[] = [];
 
   for (const hot of finalHotspots) {
-    const line = turf.lineString(hot.polyline.map((p) => [p.lng, p.lat]));
-    const lenKm = hot.lengthMeters / 1000;
+    const subPoly = hot.polyline;
+    if (subPoly.length < 2) continue;
 
-    let chunks = 1;
-    if (hot.lengthMeters > MAX_HOTSPOT_LENGTH_M) {
-      chunks = Math.ceil(hot.lengthMeters / MAX_HOTSPOT_LENGTH_M);
-    }
+    const chunkCoveredRoutes = new Set<string>();
+    const chunkModes = new Set<TransportMode>();
 
-    const chunkLenKm = lenKm / chunks;
+    for (const candRoute of candidateRoutes) {
+      const candPts = routePointsMap.get(candRoute.id) || [];
+      let matchCount = 0;
 
-    for (let c = 0; c < chunks; c++) {
-      const startDist = c * chunkLenKm;
-      const endDist = (c + 1) * chunkLenKm;
-
-      const subLine = turf.lineSliceAlong(line, startDist, endDist, {
-        units: "kilometers",
-      });
-      const coords = subLine.geometry.coordinates;
-      const subPoly = coords.map((c) => ({ lat: c[1], lng: c[0] }));
-
-      if (subPoly.length < 2) continue;
-
-      // --- [NEW] 청크별 정밀 재계산 로직 ---
-      // 매우 긴 경로의 경우, 스쳐 지나간 모든 라우트가 합집합으로 쌓이는 문제를 방지하기 위해
-      // 이 특정 350m 청크(subPoly) 내에서만 점유율을 독립적으로 다시 계산합니다.
-      const chunkCoveredRoutes = new Set<string>();
-      const chunkModes = new Set<TransportMode>();
-
-      for (const candRoute of candidateRoutes) {
-        const candPts = routePointsMap.get(candRoute.id) || [];
-        let matchCount = 0;
-
-        for (const sp of subPoly) {
-          let isNear = false;
-          for (const cp of candPts) {
-            if (getDistanceKm(sp, cp) <= PROXIMITY_THRESHOLD_KM) {
-              isNear = true;
-              break;
-            }
+      for (const sp of subPoly) {
+        let isNear = false;
+        for (const cp of candPts) {
+          if (getDistanceKm(sp, cp) <= PROXIMITY_THRESHOLD_KM) {
+            isNear = true;
+            break;
           }
-          if (isNear) matchCount++;
         }
-
-        // 해당 청크를 한 번이라도(또는 일정 부분) 지나가면 포함
-        if (matchCount > 0) {
-          chunkCoveredRoutes.add(candRoute.id);
-          chunkModes.add(candRoute.primaryMode);
-        }
+        if (isNear) matchCount++;
       }
 
-      // 재계산 결과, 이 청크에 겹치는 경로가 2개 미만이라면 핫스팟으로서 의미 없음
-      if (chunkCoveredRoutes.size < 2) continue;
-      // -----------------------------------
-
-      let minObsDist = Number.MAX_VALUE;
-      let anchor = subPoly[0];
-      for (const p of subPoly) {
-        const d = getDistanceKm(p, fromObs);
-        if (d < minObsDist) {
-          minObsDist = d;
-          anchor = p;
-        }
+      // 쪼개지 않은 거대 구간이므로, 이 긴 구간의 절반(50%) 이상을 나란히 달려야 포함으로 인정
+      if (matchCount >= subPoly.length * 0.5) {
+        chunkCoveredRoutes.add(candRoute.id);
+        chunkModes.add(candRoute.primaryMode);
       }
-
-      splitHotspots.push({
-        id: crypto.randomUUID(),
-        segmentId,
-        polyline: subPoly,
-        anchorPoint: anchor,
-        coveredRouteIds: Array.from(chunkCoveredRoutes),
-        coverageRatio: chunkCoveredRoutes.size / totalRouteCount,
-        lengthMeters: turf.length(subLine, { units: "kilometers" }) * 1000,
-        modes: Array.from(chunkModes),
-      });
     }
+
+    // 재계산 결과 겹치는 경로가 2개 미만이라면 핫스팟 취소
+    if (chunkCoveredRoutes.size < 2) continue;
+
+    let minObsDist = Number.MAX_VALUE;
+    let anchor = subPoly[0];
+    for (const p of subPoly) {
+      const d = getDistanceKm(p, fromObs);
+      if (d < minObsDist) {
+        minObsDist = d;
+        anchor = p;
+      }
+    }
+
+    splitHotspots.push({
+      id: crypto.randomUUID(),
+      segmentId,
+      polyline: subPoly,
+      anchorPoint: anchor,
+      coveredRouteIds: Array.from(chunkCoveredRoutes),
+      coverageRatio: chunkCoveredRoutes.size / totalRouteCount,
+      lengthMeters: hot.lengthMeters,
+      modes: Array.from(chunkModes),
+    });
   }
 
   return splitHotspots;
