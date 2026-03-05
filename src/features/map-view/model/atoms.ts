@@ -24,6 +24,7 @@ export type ActivePopup =
   | { type: "transit-bus"; stationId: string }
   | { type: "transit-subway"; stationCode: string }
   | { type: "hotspot"; id: string }
+  | { type: "selection-overlay" }
   | null;
 
 export type MapLayerVisibility = {
