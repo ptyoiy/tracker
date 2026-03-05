@@ -37,17 +37,30 @@ export function HotspotList({ segmentId }: Props) {
 
   const sortedHotspots = [...segmentHotspots]
     .map((h) => {
-      // 선택된 경로와 겹치는 비율 계산
-      const selectedOverlap = hasSelection
-        ? h.coveredRouteIds.filter((rid) => selectedSet.has(rid)).length
-        : 0;
-      const isSelectedBased = hasSelection && selectedOverlap >= 2;
-      return { ...h, selectedOverlap, isSelectedBased };
+      if (!hasSelection) {
+        return { ...h, isSelectedBased: false };
+      }
+
+      // 선택된 경로 기준 정밀 재계산 (비율 및 갯수)
+      const selectedCoveredIds = h.coveredRouteIds.filter((rid) =>
+        selectedSet.has(rid),
+      );
+      const newCoverageRatio = selectedCoveredIds.length / selectedSet.size;
+      return {
+        ...h,
+        coveredRouteIds: selectedCoveredIds,
+        coverageRatio: newCoverageRatio,
+        isSelectedBased: true,
+      };
+    })
+    .filter((h) => {
+      // 선택 사항이 있을 때는 선택된 노선들 중 2곳 이상 겹칠 때만 표시
+      if (hasSelection) {
+        return h.coveredRouteIds.length >= 2;
+      }
+      return true;
     })
     .sort((a, b) => {
-      // 선택 경로 기반 우선
-      if (a.isSelectedBased !== b.isSelectedBased)
-        return a.isSelectedBased ? -1 : 1;
       if (b.coverageRatio !== a.coverageRatio)
         return b.coverageRatio - a.coverageRatio;
       return b.lengthMeters - a.lengthMeters;

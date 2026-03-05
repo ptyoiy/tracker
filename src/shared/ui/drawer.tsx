@@ -65,9 +65,11 @@ function DrawerContent({
         {...props}
       >
         <DrawerPrimitive.Handle
-          className="mx-auto mt-2 mb-1 h-1.5 w-12 shrink-0 rounded-full bg-gray-300 transition-all duration-200 hover:bg-gray-400 hover:scale-x-110 active:scale-x-125 active:bg-gray-500 cursor-grab active:cursor-grabbing"
-          aria-hidden="true"
-        />
+          className="mx-auto mt-1 mb-1 flex items-center justify-center p-3 w-20 cursor-grab active:cursor-grabbing outline-none"
+          aria-label="서랍 손잡이"
+        >
+          <div className="h-1.5 w-12 rounded-full bg-gray-300 transition-colors duration-200 group-hover:bg-gray-400 group-active:bg-gray-500" />
+        </DrawerPrimitive.Handle>
         {children}
       </DrawerPrimitive.Content>
     </DrawerPortal>

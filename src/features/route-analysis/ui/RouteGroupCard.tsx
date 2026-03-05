@@ -43,10 +43,6 @@ export function RouteGroupCard({ group, candidateRoutes }: Props) {
     minDuration === maxDuration
       ? `${minDuration}분`
       : `${minDuration}~${maxDuration}분`;
-
-  // 대표 경로 추출을 위해 첫 번째 경로 활용 (타임라인 기호 표시용)
-  const representativeRoute = groupRoutes[0];
-
   const getLegIcon = (mode: string) => {
     switch (mode) {
       case "WALK":
@@ -58,7 +54,7 @@ export function RouteGroupCard({ group, candidateRoutes }: Props) {
       case "CAR":
         return "🚗";
       default:
-        return "📍";
+        return "";
     }
   };
 
@@ -88,32 +84,6 @@ export function RouteGroupCard({ group, candidateRoutes }: Props) {
         </div>
 
         <div className="text-[11px] text-gray-500 font-medium flex items-center gap-1 mt-0.5 flex-wrap">
-          {representativeRoute?.legs
-            .filter((leg) => leg.durationSeconds > 0)
-            .map((leg, i, filteredLegs) => (
-              <span key={i.toString()} className="flex items-center gap-0.5">
-                <span
-                  className={cn(
-                    "flex items-center gap-0.5 rounded px-1 py-0.5",
-                    leg.mode === "WALK"
-                      ? "bg-gray-100 text-gray-500"
-                      : leg.mode === "BUS"
-                        ? "bg-blue-50 text-blue-700 border border-blue-100"
-                        : "bg-green-50 text-green-700 border border-green-100",
-                  )}
-                >
-                  {getLegIcon(leg.mode)}
-                  {leg.route && <span className="font-bold">{leg.route}</span>}
-                  <span className="opacity-70">
-                    {Math.round(leg.durationSeconds / 60)}분
-                  </span>
-                </span>
-                {i < filteredLegs.length - 1 && (
-                  <span className="opacity-40">→</span>
-                )}
-              </span>
-            ))}
-          <span className="opacity-40 ml-1">|</span>
           <span>총 {durationSummary}</span>
           <span className="opacity-40">|</span>
           <span>CCTV {cctvSummary}</span>
@@ -175,12 +145,48 @@ export function RouteGroupCard({ group, candidateRoutes }: Props) {
                       </span>
                     )}
                   </span>
-                  <div className="flex items-center gap-1.5 text-[10px] text-gray-500 font-medium">
+                  <div className="flex items-center gap-1.5 text-[10px] text-gray-500 font-medium mt-1">
                     <span className="font-bold text-gray-700">
                       {duration}분
                     </span>
                     <span className="opacity-40">·</span>
                     <span>CCTV {cctvCount}대</span>
+                  </div>
+
+                  {/* 개별 탑승 다이어그램 */}
+                  <div className="flex items-center gap-0.5 mt-1.5 overflow-x-auto pb-0.5 custom-scrollbar">
+                    {route.legs
+                      .filter((leg) => leg.durationSeconds > 0)
+                      .map((leg, i, filteredLegs) => (
+                        <span
+                          key={i.toString()}
+                          className="flex items-center gap-0.5 shrink-0"
+                        >
+                          <span
+                            className={cn(
+                              "flex items-center gap-0.5 rounded px-1 py-0.5 text-[10px]",
+                              leg.mode === "WALK"
+                                ? "bg-gray-100 text-gray-500"
+                                : leg.mode === "BUS"
+                                  ? "bg-blue-50 text-blue-700 border border-blue-100"
+                                  : "bg-green-50 text-green-700 border border-green-100",
+                            )}
+                          >
+                            {getLegIcon(leg.mode)}
+                            {leg.route && (
+                              <span className="font-bold">{leg.route}</span>
+                            )}
+                            <span className="opacity-70">
+                              {Math.round(leg.durationSeconds / 60)}분
+                            </span>
+                          </span>
+                          {i < filteredLegs.length - 1 && (
+                            <span className="opacity-40 text-[10px] px-0.5">
+                              →
+                            </span>
+                          )}
+                        </span>
+                      ))}
                   </div>
                 </div>
               </div>

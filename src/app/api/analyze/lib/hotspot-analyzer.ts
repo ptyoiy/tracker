@@ -5,8 +5,7 @@ import * as turf from "@turf/turf";
 
 const RESAMPLE_INTERVAL_M = 30; // 30m
 const PROXIMITY_THRESHOLD_KM = 0.05; // 50m
-const COVERAGE_THRESHOLD = 0.5; // 50%
-const MAX_HOTSPOT_LENGTH_M = 350; // 350m
+const MAX_HOTSPOT_LENGTH_M = 200; // 200m
 
 type ResampledPoint = {
   lat: number;
@@ -108,8 +107,8 @@ export function extractHotspots(
         p2.coveredRoutes.add(p1.routeId);
       }
     }
-    const coverageRatio = p1.coveredRoutes.size / totalRouteCount;
-    if (coverageRatio >= COVERAGE_THRESHOLD) {
+    // 최소 2개 이상의 노선이 겹치면 핫스팟으로 인정
+    if (p1.coveredRoutes.size >= 2) {
       p1.isHot = true;
     }
   }
@@ -257,8 +256,8 @@ export function extractHotspots(
           if (isNear) matchCount++;
         }
 
-        // 청크 내의 점 중 50% 이상을 커버하면 이 라우트가 해당 청크를 지난다고 판정
-        if (matchCount >= subPoly.length * COVERAGE_THRESHOLD) {
+        // 해당 청크를 한 번이라도(또는 일정 부분) 지나가면 포함
+        if (matchCount > 0) {
           chunkCoveredRoutes.add(candRoute.id);
           chunkModes.add(candRoute.primaryMode);
         }
