@@ -1,11 +1,15 @@
-import { computeDestinationPoint, getDistance, getRhumbLineBearing } from 'geolib';
+import {
+  computeDestinationPoint,
+  getDistance,
+  getRhumbLineBearing,
+} from "geolib";
 
 /**
  * 주어진 경로(Polyline) 상에서 시작점으로부터 일정 거리(distance)만큼 이동했을 때의 좌표를 계산합니다.
  */
 export function projectPositionOnRoute(
   route: Array<{ lat: number; lng: number }>,
-  distanceMeters: number
+  distanceMeters: number,
 ): { lat: number; lng: number } | null {
   if (!route || route.length === 0) return null;
   if (route.length === 1) return route[0];
@@ -25,7 +29,11 @@ export function projectPositionOnRoute(
       const remainingDistance = distanceMeters - accumulatedDistance;
       const bearing = getRhumbLineBearing(pt1, pt2);
 
-      const projected = computeDestinationPoint(pt1, remainingDistance, bearing);
+      const projected = computeDestinationPoint(
+        pt1,
+        remainingDistance,
+        bearing,
+      );
       return { lat: projected.latitude, lng: projected.longitude };
     }
 
@@ -42,7 +50,7 @@ export function projectPositionOnRoute(
 export function projectPositionByTime(
   route: Array<{ lat: number; lng: number }>,
   speedKmh: number,
-  elapsedSeconds: number
+  elapsedSeconds: number,
 ): { lat: number; lng: number } | null {
   // 속도(km/h)를 초속(m/s)으로 변환
   const speedMs = speedKmh * (1000 / 3600);

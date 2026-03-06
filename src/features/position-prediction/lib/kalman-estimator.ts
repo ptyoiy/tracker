@@ -1,5 +1,5 @@
-import { PREDICTION_CONFIG } from '@/shared/config/prediction';
-import { KalmanState, TransportMode } from '@/types/prediction';
+import { PREDICTION_CONFIG } from "@/shared/config/prediction";
+import type { KalmanState, TransportMode } from "@/types/prediction";
 
 /**
  * 간단한 2D 등거리 원통 도법 (Equirectangular projection)을 사용하여
@@ -26,7 +26,8 @@ class LocalProjector {
 
   toGlobal(x: number, y: number): [number, number] {
     const lat = this.lat0 + (y / this.R_EARTH) * (180 / Math.PI);
-    const lng = this.lng0 + (x / (this.R_EARTH * this.cosLat0)) * (180 / Math.PI);
+    const lng =
+      this.lng0 + (x / (this.R_EARTH * this.cosLat0)) * (180 / Math.PI);
     return [lat, lng];
   }
 }
@@ -49,17 +50,17 @@ export class KalmanEstimator {
   ];
 
   private lastTimeMs: number = 0;
-  private mode: TransportMode = 'walking';
+  private mode: TransportMode = "walking";
 
   // Process noise variance (가속도 노이즈)
   private get Q_var() {
-    return this.mode === 'walking' ? 0.05 : this.mode === 'vehicle' ? 0.3 : 0.1;
+    return this.mode === "walking" ? 0.05 : this.mode === "vehicle" ? 0.3 : 0.1;
   }
 
   // Measurement noise variance (GPS 오차)
   private readonly R_var = 10; // 10m 위치 오차
 
-  constructor(mode: TransportMode = 'walking') {
+  constructor(mode: TransportMode = "walking") {
     this.mode = mode;
   }
 
@@ -108,8 +109,8 @@ export class KalmanEstimator {
     // Q (Process noise covariance)
     const qV = this.Q_var;
     const dt2 = dt * dt;
-    const dt3 = dt2 * dt / 2;
-    const dt4 = dt2 * dt2 / 4;
+    const dt3 = (dt2 * dt) / 2;
+    const dt4 = (dt2 * dt2) / 4;
     const Q = [
       [dt4 * qV, 0, dt3 * qV, 0],
       [0, dt4 * qV, 0, dt3 * qV],
@@ -120,7 +121,10 @@ export class KalmanEstimator {
     // P_pred = F * P * F^T + Q
     // (F * P * F^T) 직접 계산
     const P_pred: number[][] = [
-      [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]
+      [0, 0, 0, 0],
+      [0, 0, 0, 0],
+      [0, 0, 0, 0],
+      [0, 0, 0, 0],
     ];
     for (let i = 0; i < 4; i++) {
       for (let j = 0; j < 4; j++) {
@@ -143,14 +147,14 @@ export class KalmanEstimator {
     // S = H * P_pred * H^T + R
     const S = [
       [P_pred[0][0] + this.R_var, P_pred[0][1]],
-      [P_pred[1][0], P_pred[1][1] + this.R_var]
+      [P_pred[1][0], P_pred[1][1] + this.R_var],
     ];
 
     // S inverse
     const detS = S[0][0] * S[1][1] - S[0][1] * S[1][0];
     const invS = [
       [S[1][1] / detS, -S[0][1] / detS],
-      [-S[1][0] / detS, S[0][0] / detS]
+      [-S[1][0] / detS, S[0][0] / detS],
     ];
 
     // Kalman Gain K = P_pred * H^T * invS
@@ -159,10 +163,13 @@ export class KalmanEstimator {
       [invS[0][0], invS[0][1]],
       [invS[1][0], invS[1][1]],
       [0, 0],
-      [0, 0]
+      [0, 0],
     ];
     const K: number[][] = [
-      [0, 0], [0, 0], [0, 0], [0, 0]
+      [0, 0],
+      [0, 0],
+      [0, 0],
+      [0, 0],
     ];
     for (let i = 0; i < 4; i++) {
       for (let j = 0; j < 2; j++) {
@@ -182,7 +189,7 @@ export class KalmanEstimator {
       [1 - K[0][0], -K[0][1], 0, 0],
       [-K[1][0], 1 - K[1][1], 0, 0],
       [-K[2][0], -K[2][1], 1, 0],
-      [-K[3][0], -K[3][1], 0, 1]
+      [-K[3][0], -K[3][1], 0, 1],
     ];
 
     for (let i = 0; i < 4; i++) {
@@ -202,9 +209,12 @@ export class KalmanEstimator {
    * 학습된 상태를 바탕으로 기준 timestamp 미래의 위치를 예측합니다.
    * 실제로는 TMAP 경로 등 네트워크 제약을 쓰지만, 1차적으로 직선 기반 예측을 제공합니다.
    */
-  public predictFuture(targetTimeIso: string): { position: [number, number]; covariance: number[][] } {
+  public predictFuture(targetTimeIso: string): {
+    position: [number, number];
+    covariance: number[][];
+  } {
     if (!this.projector) {
-      throw new Error('Kalman filter not initialized');
+      throw new Error("Kalman filter not initialized");
     }
 
     const timeMs = new Date(targetTimeIso).getTime();
@@ -215,20 +225,20 @@ export class KalmanEstimator {
 
     // 예측 불확실성 (간단하게 시간에 비례해 공분산 증가)
     const growth = (dt / 60) * PREDICTION_CONFIG.UNCERTAINTY_GROWTH[this.mode];
-    const P_pred: number[][] = this.P.map(r => [...r]);
+    const P_pred: number[][] = this.P.map((r) => [...r]);
     P_pred[0][0] += growth * growth;
     P_pred[1][1] += growth * growth;
 
     const [predLat, predLng] = this.projector.toGlobal(xPred, yPred);
     return {
       position: [predLat, predLng],
-      covariance: P_pred
+      covariance: P_pred,
     };
   }
 
   public getState(): KalmanState {
     if (!this.projector) {
-      throw new Error('Kalman filter not initialized');
+      throw new Error("Kalman filter not initialized");
     }
     const [lat, lng] = this.projector.toGlobal(this.X[0], this.X[1]);
     return {

@@ -1,10 +1,15 @@
-import { PredictionResult } from '@/types/prediction';
-import { atom } from 'jotai';
+import type { PredictionResult } from "@/types/prediction";
+import { atom } from "jotai";
 
-export type PredictionUIState = 'idle' | 'analyzing' | 'predicting' | 'predicted' | 'error';
+export type PredictionUIState =
+  | "idle"
+  | "analyzing"
+  | "predicting"
+  | "predicted"
+  | "error";
 
 // 메인 상태
-export const predictionStateAtom = atom<PredictionUIState>('idle');
+export const predictionStateAtom = atom<PredictionUIState>("idle");
 
 // 예측 결과
 export const predictionResultAtom = atom<PredictionResult | null>(null);

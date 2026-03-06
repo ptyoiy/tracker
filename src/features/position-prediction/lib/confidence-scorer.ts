@@ -34,7 +34,7 @@ export function calculateConfidenceScores(
     // deviation / range 가 0에 가까우면 1점, 1을 넘어가면 급감
     let speedScore = Math.max(
       0,
-      1 - Math.pow(deviation / (range === 0 ? 1 : range), 2),
+      1 - (deviation / (range === 0 ? 1 : range)) ** 2,
     );
 
     // 만약 범위를 완전히 벗어났더라도 최소한의 가능성을 남김 (0.1)
