@@ -10,7 +10,7 @@ import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { useAtomValue, useSetAtom } from "jotai";
 import { Check, Crosshair, Layers } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Map as KakaoMap, MapTypeId } from "react-kakao-maps-sdk";
 import { useKakaoMapSdk } from "../lib/useKakaoMapSdk";
 import { useMapInteraction } from "../lib/useMapInteraction";
@@ -70,6 +70,23 @@ export function MapView() {
 
   const { handleMapClick } = useMapInteraction(panToWithOffset);
 
+  // 교통 정보 레이어 강제 갱신용
+  const [trafficRefreshToggle, setTrafficRefreshToggle] = useState(true);
+
+  useEffect(() => {
+    // 5분마다 교통정보 갱신 (5 * 60 * 1000 = 300000ms)
+    if (!mapLayers.traffic) return; // 켜져있을 때만 갱신
+
+    const timer = setInterval(() => {
+      setTrafficRefreshToggle(false);
+      setTimeout(() => {
+        setTrafficRefreshToggle(true);
+      }, 100);
+    }, 300000);
+
+    return () => clearInterval(timer);
+  }, [mapLayers.traffic]);
+
   // [MODIFY] 3. CCTV 목적별 필터 UI 숨김에 따른 미사용 변수 처리
   // const [isCctvSubMenuOpen, setIsCctvSubMenuOpen] = useState(false);
 
@@ -124,6 +141,11 @@ export function MapView() {
                 id: "isochrone" as const,
                 label: "도달 범위",
                 color: "text-purple-500",
+              },
+              {
+                id: "traffic" as const,
+                label: "교통 정보",
+                color: "text-emerald-500",
               },
               {
                 id: "cctv" as const,
@@ -269,7 +291,9 @@ export function MapView() {
           setTimeout(() => map.relayout(), 50);
         }}
       >
-        <MapTypeId type="TRAFFIC" />
+        {mapLayers.traffic && trafficRefreshToggle && (
+          <MapTypeId type="TRAFFIC" />
+        )}
         {mapLayers.observations &&
           observations.map((obs, idx) => (
             <ObservationMarker

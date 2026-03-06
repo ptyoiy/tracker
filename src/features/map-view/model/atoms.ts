@@ -34,6 +34,7 @@ export type MapLayerVisibility = {
   observations: boolean;
   transit: boolean;
   hotspot: boolean;
+  traffic: boolean;
 };
 
 export type IsochroneSelection = {
@@ -59,6 +60,7 @@ export const mapLayersAtom = atom<MapLayerVisibility>({
   observations: true,
   transit: true,
   hotspot: true,
+  traffic: false,
 });
 
 // 별도로 참조 — 순환 의존 방지를 위해 여기서 직접 선언
