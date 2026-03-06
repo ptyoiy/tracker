@@ -6,6 +6,7 @@ import {
   cctvLoadingAtom,
 } from "@/features/cctv-mapping/model/atoms";
 import { observationsAtom } from "@/features/observation-input/model/atoms";
+import { PredictionOverlay } from "@/features/position-prediction/ui/PredictionOverlay";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { useAtomValue, useSetAtom } from "jotai";
@@ -141,6 +142,11 @@ export function MapView() {
                 id: "isochrone" as const,
                 label: "도달 범위",
                 color: "text-purple-500",
+              },
+              {
+                id: "prediction" as const,
+                label: "예측 영역",
+                color: "text-red-600",
               },
               {
                 id: "traffic" as const,
@@ -308,6 +314,7 @@ export function MapView() {
         {mapLayers.hotspot && <HotspotMarkers />}{" "}
         {/* 핫스팟도 라우트 레이어에 포함 */}
         {mapLayers.isochrone && <IsochronePolygon />}
+        {mapLayers.prediction && <PredictionOverlay />}
         {mapLayers.cctv && (
           <CCTVMarkers
             onCenterChange={(latlng) => panToWithOffset(latlng.lat, latlng.lng)}

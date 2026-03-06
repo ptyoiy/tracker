@@ -6,6 +6,8 @@ import { IsochroneControls } from "@/features/map-view/ui/IsochroneControls";
 import { MapView } from "@/features/map-view/ui/MapView";
 import { observationsAtom } from "@/features/observation-input/model/atoms";
 import { ObservationForm } from "@/features/observation-input/ui/ObservationForm";
+import { FutureTimeline } from "@/features/position-prediction/ui/FutureTimeline";
+import { HypothesisCards } from "@/features/position-prediction/ui/HypothesisCards";
 import { useSelectedRoutes } from "@/features/route-analysis/lib/useSelectedRoutes";
 import { analysisResultAtom } from "@/features/route-analysis/model/atoms";
 import { RouteListPanel } from "@/features/route-analysis/ui/RouteAnalysisPanel";
@@ -85,6 +87,9 @@ export default function Home() {
         <div className="absolute inset-0 z-0 w-full h-full" aria-hidden="true">
           <MapView />
         </div>
+
+        {/* Future Prediction Timeline */}
+        <FutureTimeline />
 
         {/* Bottom Sheet UI */}
         <Drawer
@@ -209,6 +214,17 @@ export default function Home() {
                   iconBgClass="bg-purple-50"
                 >
                   <IsochroneControls />
+                </SectionItem>
+
+                <SectionItem
+                  value="prediction"
+                  title="실시간 위치 예측"
+                  icon={
+                    <Navigation className="w-5 h-5 text-indigo-500 fill-indigo-500" />
+                  }
+                  iconBgClass="bg-indigo-50"
+                >
+                  <HypothesisCards />
                 </SectionItem>
 
                 {/*

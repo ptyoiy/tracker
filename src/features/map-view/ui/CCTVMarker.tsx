@@ -6,6 +6,10 @@ import {
   cctvSearchRadiusAtom,
   hoveredCctvIdAtom,
 } from "@/features/cctv-mapping/model/atoms";
+import {
+  predictionResultAtom,
+  selectedHypothesisIdAtom,
+} from "@/features/position-prediction/model/prediction-atoms";
 import { useSelectedRoutes } from "@/features/route-analysis/lib/useSelectedRoutes";
 import {
   analysisResultAtom,
@@ -16,6 +20,7 @@ import { cn } from "@/shared/lib/utils";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
+import * as turf from "@turf/turf";
 import { useAtom, useAtomValue } from "jotai";
 import { Camera, Info, MapPinned, ShieldCheck, Target, X } from "lucide-react";
 import { useMemo } from "react";
@@ -40,6 +45,28 @@ export function CCTVMarkers({ onCenterChange, purposeFilter }: Props) {
   const analysisResult = useAtomValue(analysisResultAtom);
   const lastParams = useAtomValue(lastAnalysisParamsAtom);
   const map = useMap();
+
+  // 예측결과
+  const predictionResult = useAtomValue(predictionResultAtom);
+  const selectedHypothesisId = useAtomValue(selectedHypothesisIdAtom);
+
+  // 활성 가설 (선택된 게 있으면 그것, 없으면 가장 확률 높은 첫번쨰 것 혹은 전체)
+  const activeHypothesis = useMemo(() => {
+    if (
+      !predictionResult ||
+      predictionResult.status !== "success" ||
+      predictionResult.hypotheses.length === 0
+    )
+      return null;
+    if (selectedHypothesisId) {
+      return (
+        predictionResult.hypotheses.find(
+          (h) => h.id === selectedHypothesisId,
+        ) || null
+      );
+    }
+    return predictionResult.hypotheses[0];
+  }, [predictionResult, selectedHypothesisId]);
 
   // 경로분석 탭에서 선택된 첫 번째 경로 (표시용)
   const activeRoute =
@@ -200,12 +227,23 @@ export function CCTVMarkers({ onCenterChange, purposeFilter }: Props) {
         const isSelected = c.id === selectedId;
         const isActive = isSelected || isHovered;
 
+        // 예측 영역에 포함되는지 확인
+        let isInPrediction = false;
+        if (activeHypothesis) {
+          const pt = turf.point([c.lng, c.lat]);
+          // 가장 넓은 범위인 low polygon 안에 들어오는지 체크
+          isInPrediction = turf.booleanPointInPolygon(
+            pt,
+            activeHypothesis.confidenceZone.low,
+          );
+        }
+
         return (
           <div key={c.id}>
             {/* Custom SVG Marker using CustomOverlayMap for better interaction and styling */}
             <CustomOverlayMap
               position={{ lat: c.lat, lng: c.lng }}
-              zIndex={isActive ? 50 : 1}
+              zIndex={isActive || isInPrediction ? 50 : 1}
               clickable
             >
               <button
@@ -240,13 +278,17 @@ export function CCTVMarkers({ onCenterChange, purposeFilter }: Props) {
                     "flex items-center justify-center rounded-full shadow-lg border-2 transition-all duration-300",
                     isActive
                       ? "w-7 h-7 bg-blue-600 border-white scale-110"
-                      : "w-5 h-5 bg-white border-blue-500 scale-100",
+                      : isInPrediction
+                        ? "w-7 h-7 bg-red-500 border-red-200 scale-110 animate-pulse"
+                        : "w-5 h-5 bg-white border-blue-500 scale-100",
                   )}
                 >
                   <Camera
                     className={cn(
                       "transition-colors duration-300",
-                      isActive ? "w-4 h-4 text-white" : "w-3 h-3 text-blue-600",
+                      isActive || isInPrediction
+                        ? "w-4 h-4 text-white"
+                        : "w-3 h-3 text-blue-600",
                     )}
                   />
                 </div>
