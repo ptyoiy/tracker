@@ -111,7 +111,7 @@ export function HotspotMarkers() {
                   lat: hot.anchorPoint.lat,
                   lng: hot.anchorPoint.lng,
                 }}
-                yAnchor={2.2}
+                yAnchor={1.8}
                 zIndex={100}
                 clickable
               >
@@ -132,15 +132,24 @@ export function HotspotMarkers() {
                       const fromStr = parts[0];
                       const toStr = parts[1];
                       if (fromStr && toStr) {
-                        return `${parseInt(fromStr) + 1} → ${parseInt(toStr) + 1} 관측 지점`;
+                        return `${parseInt(fromStr, 10) + 1} → ${parseInt(toStr, 10) + 1} 관측 지점`;
                       }
                       return "중복 구간";
                     })()}
                   </div>
                   <div className="text-[10px] text-gray-600 space-y-1 mt-1.5 pt-1.5 border-t border-gray-100">
-                    <div className="flex justify-between items-center bg-orange-50 px-1.5 py-0.5 rounded text-orange-700 font-bold mb-1">
+                    <div className="flex justify-between items-center bg-orange-50 px-1.5 py-0.5 rounded text-orange-700 font-bold mb-1 gap-2">
                       <span>중복 비율:</span>
-                      <span>{Math.round(hot.coverageRatio * 100)}%</span>
+                      <span>
+                        {Math.round(hot.coverageRatio * 100)}% (
+                        {hot.coveredRouteIds.length}/
+                        {hot.coverageRatio > 0
+                          ? Math.round(
+                              hot.coveredRouteIds.length / hot.coverageRatio,
+                            )
+                          : 0}
+                        )
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span>길이:</span>
