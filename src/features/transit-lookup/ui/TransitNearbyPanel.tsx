@@ -229,11 +229,11 @@ export function TransitNearbyPanel() {
                       className="border rounded-lg overflow-hidden"
                     >
                       <AccordionTrigger className="hover:no-underline px-3 py-2">
-                        <div className="flex items-center gap-2 w-full pr-2">
-                          <span className="font-semibold text-gray-900 text-sm">
+                        <div className="flex items-center gap-2 w-full pr-2 min-w-0">
+                          <span className="font-semibold text-gray-900 text-sm truncate">
                             {station.stationName}
                           </span>
-                          <span className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                          <span className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded shrink-0">
                             {station.distance}m
                           </span>
                         </div>
@@ -273,14 +273,14 @@ export function TransitNearbyPanel() {
                       className="border rounded-lg overflow-hidden"
                     >
                       <AccordionTrigger className="hover:no-underline px-3 py-2">
-                        <div className="flex items-center gap-2 w-full pr-2">
-                          <span className="font-semibold text-gray-900 text-sm">
+                        <div className="flex items-center gap-2 w-full pr-2 min-w-0">
+                          <span className="font-semibold text-gray-900 text-sm shrink-0">
                             {station.stationName}역
                           </span>
-                          <span className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                          <span className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded shrink-0">
                             {station.distance}m
                           </span>
-                          <span className="text-xs font-medium text-orange-600 ml-auto">
+                          <span className="text-xs font-medium text-orange-600 ml-auto truncate">
                             {Array.from(
                               new Set(station.lines.map((l) => l.lineName)),
                             ).join(" / ")}

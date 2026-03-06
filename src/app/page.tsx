@@ -113,31 +113,31 @@ export default function Home() {
               )}
               onClick={toggleSnap}
             >
-              <div className="flex gap-2 items-center overflow-x-auto no-scrollbar pointer-events-none">
+              <div className="flex gap-2 items-center flex-1 min-w-0 pointer-events-none">
                 <Badge
                   variant="outline"
-                  className="flex gap-1 whitespace-nowrap bg-white border-red-200 text-red-600 font-bold px-2 py-0.5"
+                  className="flex gap-1 shrink-0 whitespace-nowrap bg-white border-red-200 text-red-600 font-bold px-2 py-0.5"
                 >
                   <MapPin className="w-3 h-3" /> {observations.length}
                 </Badge>
                 {bestRoute && (
                   <Badge
                     variant="secondary"
-                    className="flex gap-1 whitespace-nowrap bg-blue-100 text-blue-700 border-blue-200 px-2 py-0.5"
+                    className="flex gap-1 shrink-0 whitespace-nowrap bg-blue-100 text-blue-700 border-blue-200 px-2 py-0.5"
                   >
                     <Navigation className="w-3 h-3" />{" "}
                     {Math.round(bestRoute.totalDurationSeconds / 60)}분
                   </Badge>
                 )}
                 {lastObs && (
-                  <span className="text-[11px] text-gray-500 font-semibold whitespace-nowrap truncate max-w-[140px] ml-1">
+                  <span className="text-[11px] text-gray-500 font-semibold truncate min-w-0 flex-1 ml-1">
                     {lastObs.address}
                   </span>
                 )}
                 {analysisResult.stale && (
-                  <span className="ml-2 text-[11px] text-red-500 font-bold whitespace-nowrap flex items-center gap-1 animate-pulse">
+                  <span className="ml-1 text-[11px] shrink-0 text-red-500 font-bold whitespace-nowrap flex items-center gap-1 animate-pulse">
                     <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                    관측 변경됨 · 재분석 필요
+                    재분석 요망
                   </span>
                 )}
               </div>

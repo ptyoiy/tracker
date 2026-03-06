@@ -1,8 +1,6 @@
 // src/features/observation-input/ui/ObservationFormField.tsx
 "use client";
 
-import { Clock, MapPin, Trash2 } from "lucide-react";
-import { Controller, type UseFormReturn, useWatch } from "react-hook-form";
 import { cn } from "@/shared/lib/utils";
 import {
   AccordionContent,
@@ -12,6 +10,8 @@ import {
 } from "@/shared/ui/accordion";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
+import { Clock, MapPin, Trash2 } from "lucide-react";
+import { Controller, type UseFormReturn, useWatch } from "react-hook-form";
 import type { ObservationFormValuesRaw } from "../model/schema";
 import { type LocationResult, LocationSearch } from "./LocationSearch";
 
@@ -49,8 +49,8 @@ export function ObservationFormFields({ index, form, onRemove }: Props) {
       value={`item-${index}`}
       className="border rounded-xl px-3 bg-white mb-2 last:mb-0 overflow-hidden shadow-sm transition-all hover:border-blue-100"
     >
-      <div className="flex items-center w-full">
-        <AccordionTrigger className="hover:no-underline py-4 flex-1">
+      <div className="flex items-center w-full min-w-0">
+        <AccordionTrigger className="hover:no-underline py-4 flex-1 min-w-0">
           <AccordionTriggerContent
             index={index}
             watchTimestamp={watchTimestamp}
