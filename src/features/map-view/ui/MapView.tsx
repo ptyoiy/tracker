@@ -11,7 +11,7 @@ import { Button } from "@/shared/ui/button";
 import { useAtomValue, useSetAtom } from "jotai";
 import { Check, Crosshair, Layers } from "lucide-react";
 import { useEffect, useRef } from "react";
-import { Map as KakaoMap } from "react-kakao-maps-sdk";
+import { Map as KakaoMap, MapTypeId } from "react-kakao-maps-sdk";
 import { useKakaoMapSdk } from "../lib/useKakaoMapSdk";
 import { useMapInteraction } from "../lib/useMapInteraction";
 import { useMapLayers } from "../lib/useMapLayers";
@@ -269,6 +269,7 @@ export function MapView() {
           setTimeout(() => map.relayout(), 50);
         }}
       >
+        <MapTypeId type="TRAFFIC" />
         {mapLayers.observations &&
           observations.map((obs, idx) => (
             <ObservationMarker
