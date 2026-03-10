@@ -50,6 +50,8 @@ export type SelectedRoutePath = {
   type: "bus" | "subway";
   path: { lat: number; lng: number }[];
   stops: RoutePathStop[];
+  /** 버스 노선 방향 구분: "0" = 정방향, "1" = 역방향 */
+  section?: string;
 } | null;
 
 export const selectedRoutePathAtom = atom<SelectedRoutePath>(null);

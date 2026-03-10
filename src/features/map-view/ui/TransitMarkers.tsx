@@ -255,7 +255,11 @@ export function TransitMarkers({
             path={selectedRoutePath.path}
             strokeWeight={5}
             strokeColor={
-              selectedRoutePath.type === "bus" ? "#3B82F6" : "#F97316"
+              selectedRoutePath.type === "bus"
+                ? selectedRoutePath.section === "1"
+                  ? "#EF4444" // 역방향: 빨강
+                  : "#3B82F6" // 정방향: 파랑
+                : "#F97316" // 지하철: 주황
             }
             strokeOpacity={0.8}
             strokeStyle="solid"
@@ -279,6 +283,18 @@ export function TransitMarkers({
               <span className="text-xs font-bold text-gray-800">
                 {selectedRoutePath.routeName}
               </span>
+              {selectedRoutePath.type === "bus" &&
+                selectedRoutePath.section && (
+                  <span
+                    className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                      selectedRoutePath.section === "1"
+                        ? "bg-red-100 text-red-600"
+                        : "bg-blue-100 text-blue-600"
+                    }`}
+                  >
+                    {selectedRoutePath.section === "1" ? "역방향" : "정방향"}
+                  </span>
+                )}
               <span className="text-[10px] text-gray-500">
                 {selectedRoutePath.stops.length}개 정류장
               </span>

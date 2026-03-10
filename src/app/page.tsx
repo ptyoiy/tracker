@@ -45,19 +45,26 @@ export default function Home() {
   const [snap, setSnap] = useAtom(bottomSheetSnapAtom);
   const [activeSection, setActiveSection] = useAtom(activeSectionAtom);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const lastScrolledSectionRef = useRef<ActiveSection | null>(null);
 
   const observations = useAtomValue(observationsAtom);
   const selectedRoutes = useSelectedRoutes();
   const analysisResult = useAtomValue(analysisResultAtom);
 
   useEffect(() => {
-    if (activeSection) {
+    if (activeSection && activeSection !== lastScrolledSectionRef.current) {
       const timer = setTimeout(() => {
         const element = document.getElementById(`section-${activeSection}`);
-        if (element) {
-          element.scrollIntoView({ behavior: "smooth", block: "start" });
+        if (element && scrollContainerRef.current) {
+          // 직접 scrollTo 사용
+          const offsetTop = element.offsetTop;
+          scrollContainerRef.current.scrollTo({
+            top: offsetTop - 1,
+            behavior: "smooth",
+          });
+          lastScrolledSectionRef.current = activeSection;
         }
-      }, 350);
+      }, 600); // 애니메이션 완결을 위해 600ms 대기
       return () => clearTimeout(timer);
     }
   }, [activeSection]);

@@ -54,9 +54,35 @@ export function RouteTraceView({
   // 데이터 로드 시 지도에 경로 + 정류소 정보 표시
   useEffect(() => {
     if (data && data.stops.length > 0) {
-      const validStops = data.stops.filter((s) => s.lat !== 0 && s.lng !== 0);
-      const validPath = validStops.map((s) => ({ lat: s.lat, lng: s.lng }));
-      if (validPath.length >= 2) {
+      console.log(
+        "[DEBUG:RouteTraceView] data received:",
+        !!data,
+        "stops:",
+        data.stops.length,
+        "polyline:",
+        data.polyline?.length,
+      );
+      const validStops = data.stops.filter(
+        (s) =>
+          Number.isFinite(s.lat) &&
+          Number.isFinite(s.lng) &&
+          s.lat !== 0 &&
+          s.lng !== 0,
+      );
+
+      // polyline이 있으면 곡선 경로 사용, 없으면 정류장 좌표 직선 폴백
+      const path =
+        data.polyline && data.polyline.length >= 2
+          ? data.polyline
+          : validStops.map((s) => ({ lat: s.lat, lng: s.lng }));
+
+      console.log(
+        "[DEBUG:RouteTraceView] path length:",
+        path.length,
+        "validStops length:",
+        validStops.length,
+      );
+      if (path.length >= 2) {
         // 기준역(boardingStationId)의 인덱스와 누적 시간을 찾습니다.
         let boardIdx = validStops.findIndex(
           (s) => s.stationId === boardingStationId,
@@ -67,7 +93,7 @@ export function RouteTraceView({
         setRoutePath({
           routeName: routeName,
           type,
-          path: validPath,
+          path,
           stops: validStops.map((s, idx) => ({
             lat: s.lat,
             lng: s.lng,
@@ -76,6 +102,7 @@ export function RouteTraceView({
             isTransfer: s.isTransfer,
             isFirst: idx === boardIdx,
           })),
+          section: data.section,
         });
       }
     }

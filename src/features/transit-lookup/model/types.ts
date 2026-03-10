@@ -114,4 +114,8 @@ export type RouteTraceResponse = {
   direction: string; // 방면 (예: "건대입구역")
   boardingStation: string;
   stops: TraceStop[];
+  /** 실제 도로 기반 곡선 경로 좌표 (TMap driving API 결과) */
+  polyline?: { lat: number; lng: number }[];
+  /** 버스 노선 방향 구분: "0" = 정방향, "1" = 역방향 */
+  section?: string;
 };

@@ -88,11 +88,10 @@ export function RouteGroupCard({ group, candidateRoutes }: Props) {
             공통 버스 구간
           </Badge>
           <span className="text-[13px] font-black text-gray-900 truncate">
-            {group.busNumbers.join(", ")} 외{" "}
-            {group.busNumbers.length > 2
-              ? group.memberRouteIds.length - group.busNumbers.length
-              : 0}
-            개
+            {group.busNumbers.join(", ")}
+            {group.memberRouteIds.length > group.busNumbers.length && (
+              <> 외 {group.memberRouteIds.length - group.busNumbers.length}개</>
+            )}
           </span>
         </div>
 
