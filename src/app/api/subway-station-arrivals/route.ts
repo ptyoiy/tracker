@@ -49,13 +49,14 @@ export async function POST(req: Request) {
     // KST
     const kstDate = new Date(
       refDate.getTime() +
-      9 * 60 * 60 * 1000 +
-      refDate.getTimezoneOffset() * 60 * 1000,
+        9 * 60 * 60 * 1000 +
+        refDate.getTimezoneOffset() * 60 * 1000,
     );
 
     const now = new Date();
     const diffMins = Math.abs(refDate.getTime() - now.getTime()) / (1000 * 60);
-    const effectiveMode = mode === "auto" ? (diffMins <= 15 ? "realtime" : "timetable") : mode;
+    const effectiveMode =
+      mode === "auto" ? (diffMins <= 15 ? "realtime" : "timetable") : mode;
 
     const lines: SubwayLineInfo[] = [];
 
@@ -132,7 +133,9 @@ export async function POST(req: Request) {
                     endStatnNm: t.arvlStnNm,
                   };
                 })
-                .filter((t) => t.minutesFromRef >= -15 && t.minutesFromRef <= 45)
+                .filter(
+                  (t) => t.minutesFromRef >= -15 && t.minutesFromRef <= 45,
+                )
                 .sort((a, b) => a.minutesFromRef - b.minutesFromRef);
 
             if (up.length > 0) {

@@ -77,7 +77,7 @@ export default function Home() {
   useNearbyStations();
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden relative bg-white">
+    <div className="flex flex-col h-[100dvh] w-screen overflow-hidden relative bg-white">
       <KakaoLoader />
 
       <main className="flex-1 flex flex-col h-full w-full relative">
@@ -168,8 +168,8 @@ export default function Home() {
                   snap === "84px"
                     ? "0px"
                     : typeof snap === "number"
-                      ? `calc(${snap * 100}vh - 84px)`
-                      : "calc(100vh - 84px)",
+                      ? `calc(${snap * 100}dvh - 84px)`
+                      : "calc(100dvh - 84px)",
               }}
             >
               <Accordion

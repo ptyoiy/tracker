@@ -234,7 +234,7 @@ export function TransitNearbyPanel() {
                             {station.stationName}
                           </span>
                           <span className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded shrink-0">
-                            {station.distance}m
+                            기준 위치에서 {station.distance}m
                           </span>
                         </div>
                       </AccordionTrigger>
@@ -278,7 +278,7 @@ export function TransitNearbyPanel() {
                             {station.stationName}역
                           </span>
                           <span className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded shrink-0">
-                            {station.distance}m
+                            기준 위치에서 {station.distance}m
                           </span>
                           <span className="text-xs font-medium text-orange-600 ml-auto truncate">
                             {Array.from(

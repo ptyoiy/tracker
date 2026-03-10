@@ -86,6 +86,7 @@ export function useNearbyStations() {
           stationId: station.stationId,
           distance: station.distance,
           observationIndex: obsIndex,
+          arsId: station.arsId,
         });
       }
 

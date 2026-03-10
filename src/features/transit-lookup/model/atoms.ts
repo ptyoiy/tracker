@@ -30,6 +30,7 @@ export type NearbyStationMarker = {
   stationId: string;
   distance: number;
   observationIndex: number;
+  arsId?: string;
 };
 
 export const nearbyStationsAtom = atom<NearbyStationMarker[]>([]);

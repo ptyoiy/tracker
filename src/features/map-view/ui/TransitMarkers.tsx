@@ -5,12 +5,11 @@ import { observationsAtom } from "@/features/observation-input/model/atoms";
 import {
   nearbyStationsAtom,
   selectedRoutePathAtom,
-  transitLocationAtom,
   transitResultAtom,
 } from "@/features/transit-lookup/model/atoms";
 import { BusStationCard } from "@/features/transit-lookup/ui/BusStationCard";
 import { SubwayStationCard } from "@/features/transit-lookup/ui/SubwayStationCard";
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { useAtom, useAtomValue } from "jotai";
 import { MapPinOff, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { CustomOverlayMap, Polyline } from "react-kakao-maps-sdk";
@@ -28,31 +27,9 @@ export function TransitMarkers({
   );
   const observations = useAtomValue(observationsAtom);
   const [activePopup, setActivePopup] = useAtom(activePopupAtom);
-  const setTransitLocation = useSetAtom(transitLocationAtom);
 
-  // 디버그 로그
-  const busNearby = nearbyStations.filter((s) => s.type === "bus");
   const subwayNearby = nearbyStations.filter((s) => s.type === "subway");
-  console.log(
-    "[DEBUG:TransitMarkers] nearbyStations:",
-    nearbyStations.length,
-    "개",
-    busNearby.length,
-    "버스",
-    subwayNearby.length,
-    "지하철",
-  );
-  if (busNearby.length > 0)
-    console.log(
-      busNearby,
-      "[DEBUG:TransitMarkers] 버스 좌표 샘플:",
-      busNearby.slice(0, 3).map((s) => ({
-        name: s.name,
-        lat: s.lat,
-        lng: s.lng,
-        stationId: s.stationId,
-      })),
-    );
+
   if (subwayNearby.length > 0)
     console.log(
       "[DEBUG:TransitMarkers] 지하철 좌표 샘플:",
@@ -82,34 +59,6 @@ export function TransitMarkers({
     return sorted[0]?.timestamp ?? null;
   }, [observations]);
 
-  // 현재 상세 조회(transitResult)에 포함된 정류장 ID Set (중복 방지)
-  const resultStationIds = useMemo(() => {
-    const ids = new Set<string>();
-    if (result) {
-      for (const s of result.bus.stations) ids.add(`bus-${s.stationId}`);
-      for (const s of result.subway.stations)
-        ids.add(`subway-${s.stationCode}`);
-    }
-    return ids;
-  }, [result]);
-
-  // nearbyStations 중 상세 조회 결과와 겹치지 않는 것만 표시
-  const filteredNearbyStations = useMemo(
-    () =>
-      nearbyStations.filter(
-        (ns) => !resultStationIds.has(`${ns.type}-${ns.stationId}`),
-      ),
-    [nearbyStations, resultStationIds],
-  );
-  console.log(
-    "[DEBUG:TransitMarkers] filteredNearby:",
-    filteredNearbyStations.length,
-    "개 (bus:",
-    filteredNearbyStations.filter((s) => s.type === "bus").length,
-    "subway:",
-    filteredNearbyStations.filter((s) => s.type === "subway").length,
-    ")",
-  );
   // 현재 열려있는 팝업 정보 (상세 결과 + nearby 폴백)
   const activeBusStation = (() => {
     if (activePopup?.type !== "transit-bus") return null;
@@ -127,7 +76,7 @@ export function TransitMarkers({
     if (nearbyMatch) {
       return {
         stationId: nearbyMatch.stationId,
-        arsId: nearbyMatch.stationId,
+        arsId: nearbyMatch.arsId || nearbyMatch.stationId,
         stationName: nearbyMatch.name,
         lat: nearbyMatch.lat,
         lng: nearbyMatch.lng,
@@ -179,7 +128,7 @@ export function TransitMarkers({
     <>
       {/* 관측지점 기반 인근 버스 정류장 마커 (경로 표시 중 아닐 때만) */}
       {!hideOtherMarkers &&
-        filteredNearbyStations
+        nearbyStations
           .filter((ns) => ns.type === "bus")
           .map((station) => (
             <CustomOverlayMap
@@ -194,7 +143,6 @@ export function TransitMarkers({
                 className="flex flex-col items-center group -mt-1 hover:scale-110 transition-transform opacity-75 hover:opacity-100"
                 onClick={() => {
                   onCenterChange?.({ lat: station.lat, lng: station.lng });
-                  setTransitLocation({ lat: station.lat, lng: station.lng });
                   setActivePopup({
                     type: "transit-bus",
                     stationId: station.stationId,
@@ -215,7 +163,7 @@ export function TransitMarkers({
 
       {/* 관측지점 기반 인근 지하철역 마커 (경로 표시 중 아닐 때만) */}
       {!hideOtherMarkers &&
-        filteredNearbyStations
+        nearbyStations
           .filter((ns) => ns.type === "subway")
           .map((station) => (
             <CustomOverlayMap
@@ -230,7 +178,6 @@ export function TransitMarkers({
                 className="flex flex-col items-center group -mt-1 hover:scale-110 transition-transform opacity-75 hover:opacity-100"
                 onClick={() => {
                   onCenterChange?.({ lat: station.lat, lng: station.lng });
-                  setTransitLocation({ lat: station.lat, lng: station.lng });
                   setActivePopup({
                     type: "transit-subway",
                     stationCode: station.stationId, // For fallback UI matching
@@ -278,8 +225,8 @@ export function TransitMarkers({
                   ? (popupStation as typeof activeBusStation)?.stationName
                   : `${(popupStation as typeof activeSubwayStation)?.stationName}역`}
               </span>
-              <span className="text-[10px] text-gray-400 shrink-0">
-                {popupStation.distance}m
+              <span className="text-[10px] text-gray-500 shrink-0">
+                기준 위치에서 {popupStation.distance}m
               </span>
             </div>
 
