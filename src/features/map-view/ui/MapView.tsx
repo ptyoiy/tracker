@@ -6,10 +6,11 @@ import {
   cctvLoadingAtom,
 } from "@/features/cctv-mapping/model/atoms";
 import { observationsAtom } from "@/features/observation-input/model/atoms";
+import { cn } from "@/shared/lib/utils";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { useAtomValue, useSetAtom } from "jotai";
-import { Check, Crosshair, Layers } from "lucide-react";
+import { Check, Layers } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Map as KakaoMap, MapTypeId } from "react-kakao-maps-sdk";
 import { useKakaoMapSdk } from "../lib/useKakaoMapSdk";
@@ -38,14 +39,8 @@ export function MapView() {
   }, [allCctv, setAllCctvForPurpose]);
 
   const { isLoaded } = useKakaoMapSdk(mapRef);
-  const {
-    mapCenter,
-    mapLevel,
-    setMapLevel,
-    panToWithOffset,
-    handleIdle,
-    recenter,
-  } = useMapViewport(mapRef);
+  const { mapCenter, mapLevel, setMapLevel, panToWithOffset, handleIdle } =
+    useMapViewport(mapRef);
 
   // 외부 PanTo 명령 구독
   const mapCenterCommand = useAtomValue(mapCenterCommandAtom);
@@ -87,9 +82,6 @@ export function MapView() {
     return () => clearInterval(timer);
   }, [mapLayers.traffic]);
 
-  // [MODIFY] 3. CCTV 목적별 필터 UI 숨김에 따른 미사용 변수 처리
-  // const [isCctvSubMenuOpen, setIsCctvSubMenuOpen] = useState(false);
-
   if (!isLoaded) {
     return (
       <div
@@ -102,20 +94,82 @@ export function MapView() {
     );
   }
 
-  // [MODIFY] 3. CCTV 목적별 필터 UI 숨김에 따른 미사용 변수 처리
-  // const allPurposesHidden =
-  //  cctvPurposeFilter.size > 0 && cctvPurposeFilter.size >= cctvPurposes.length;
-
   return (
     <div className="w-full h-full relative min-h-[500px]">
-      {/* Floating Controls */}
+      {/* Top-Left Controls: Traffic & CCTV Toggle */}
+      <div className="absolute top-4 left-4 z-20 flex gap-2">
+        <Button
+          variant={mapLayers.traffic ? "default" : "secondary"}
+          size="sm"
+          className={cn(
+            "shadow-md h-9 px-3 gap-1.5 font-bold transition-all",
+            mapLayers.traffic
+              ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+              : "bg-white/90 text-emerald-700 hover:bg-gray-50",
+          )}
+          onClick={() => toggleLayer("traffic")}
+        >
+          <div
+            className={cn(
+              "w-2 h-2 rounded-full",
+              mapLayers.traffic ? "bg-white animate-pulse" : "bg-emerald-500",
+            )}
+          />
+          교통정보
+        </Button>
+        <Button
+          variant={mapLayers.cctv ? "default" : "secondary"}
+          size="sm"
+          className={cn(
+            "shadow-md h-9 px-3 gap-1.5 font-bold transition-all",
+            mapLayers.cctv
+              ? "bg-green-600 hover:bg-green-700 text-white"
+              : "bg-white/90 text-green-700 hover:bg-gray-50",
+          )}
+          onClick={() => toggleLayer("cctv")}
+        >
+          <div
+            className={cn(
+              "w-2 h-2 rounded-full",
+              mapLayers.cctv ? "bg-white animate-pulse" : "bg-green-500",
+            )}
+          />
+          CCTV
+        </Button>
+        <Button
+          variant={mapLayers.hotspot ? "default" : "secondary"}
+          size="sm"
+          className={cn(
+            "shadow-md h-9 px-3 gap-1.5 font-bold transition-all",
+            mapLayers.hotspot
+              ? "bg-orange-600 hover:bg-orange-700 text-white"
+              : "bg-white/90 text-orange-700 hover:bg-gray-50",
+          )}
+          onClick={() => toggleLayer("hotspot")}
+        >
+          <div
+            className={cn(
+              "w-2 h-2 rounded-full",
+              mapLayers.hotspot ? "bg-white animate-pulse" : "bg-orange-500",
+            )}
+          />
+          중복 경로
+        </Button>
+      </div>
+
+      {/* Floating Controls (Top-Right) */}
       <div className="absolute top-4 right-4 z-20 flex flex-col gap-2 items-end">
         <div className="flex items-center gap-2">
           <SelectionOverlay />
           <Button
             variant="secondary"
             size="icon"
-            className={`shadow-md transition-colors ${isLayerMenuOpen ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-white/90"}`}
+            className={cn(
+              "shadow-md transition-colors",
+              isLayerMenuOpen
+                ? "bg-blue-600 text-white hover:bg-blue-700"
+                : "bg-white/90",
+            )}
             aria-label="지도 레이어 설정"
             aria-expanded={isLayerMenuOpen}
             onClick={toggleLayerMenu}
@@ -143,24 +197,9 @@ export function MapView() {
                 color: "text-purple-500",
               },
               {
-                id: "traffic" as const,
-                label: "교통 정보",
-                color: "text-emerald-500",
-              },
-              {
-                id: "cctv" as const,
-                label: "CCTV 마커",
-                color: "text-green-600",
-              },
-              {
                 id: "transit" as const,
                 label: "대중교통 현황",
                 color: "text-orange-500",
-              },
-              {
-                id: "hotspot" as const,
-                label: "중복 경로",
-                color: "text-orange-600",
               },
             ].map((layer) => (
               <div key={layer.id}>
@@ -172,97 +211,20 @@ export function MapView() {
                   }}
                 >
                   <span className={`flex items-center gap-1.5 ${layer.color}`}>
-                    {layer.id === "cctv" ? "CCTV" : layer.label}
-                    {/* [MODIFY] 3. CCTV 하위 메뉴 버튼 제거
-                    {layer.id === "cctv" && cctvPurposes.length > 0 && (
-                      <button
-                        type="button"
-                        className="p-0.5 rounded hover:bg-gray-200 transition-colors"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setIsCctvSubMenuOpen((prev) => !prev);
-                        }}
-                        aria-label="CCTV 목적별 필터 펼치기"
-                      >
-                        <ChevronDown
-                          className={`w-3 h-3 transition-transform duration-200 ${isCctvSubMenuOpen ? "rotate-180" : ""}`}
-                        />
-                      </button>
-                    )}
-                    */}
+                    {layer.label}
                   </span>
                   {mapLayers[layer.id] && (
                     <Check className="w-3 h-3 text-blue-600" />
                   )}
                 </button>
-
-                {/* [MODIFY] 3. CCTV 목적별 필터 UI 숨김
-                {layer.id === "cctv" &&
-                  isCctvSubMenuOpen &&
-                  cctvPurposes.length > 0 && (
-                    <div className="ml-3 pl-2 border-l-2 border-green-200 mb-1 flex flex-col gap-0.5">
-                      <button
-                        type="button"
-                        className="flex items-center justify-between px-2 py-1.5 text-[11px] font-semibold rounded hover:bg-gray-50 transition-colors w-full text-left text-gray-500"
-                        onClick={() => toggleAllCctvPurposes()}
-                      >
-                        <span>
-                          {allPurposesHidden ? "전체 표시" : "전체 숨기기"}
-                        </span>
-                        {!allPurposesHidden && (
-                          <Check className="w-2.5 h-2.5 text-blue-600" />
-                        )}
-                      </button>
-
-                      <div className="h-px bg-gray-100 my-0.5" />
-
-                      {cctvPurposes.map((purpose) => {
-                        const isHidden = cctvPurposeFilter.has(purpose);
-                        return (
-                          <button
-                            key={purpose}
-                            type="button"
-                            className="flex items-center justify-between px-2 py-1 text-[11px] rounded hover:bg-gray-50 transition-colors w-full text-left"
-                            onClick={() => toggleCctvPurpose(purpose)}
-                          >
-                            <span
-                              className={
-                                isHidden
-                                  ? "text-gray-400 line-through"
-                                  : "text-green-700"
-                              }
-                            >
-                              {purpose}
-                            </span>
-                            {!isHidden && (
-                              <Check className="w-2.5 h-2.5 text-green-600" />
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                */}
               </div>
             ))}
           </div>
         )}
       </div>
 
-      <div className="absolute bottom-32 right-4 z-20 flex flex-col gap-2">
-        <Button
-          variant="default"
-          size="icon"
-          className="shadow-lg rounded-full h-12 w-12 bg-white text-gray-900 hover:bg-gray-100 border border-gray-200"
-          aria-label="지도를 마지막 관측 지점으로 재중심"
-          onClick={recenter}
-        >
-          <Crosshair className="w-6 h-6" aria-hidden="true" />
-        </Button>
-      </div>
-
       {isCctvLoading && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[50] pointer-events-none">
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-[50] pointer-events-none">
           <Badge
             variant="secondary"
             className="px-4 py-2 bg-white/90 shadow-md border-primary text-primary"
@@ -305,13 +267,11 @@ export function MapView() {
             />
           ))}
         {mapLayers.route && <RoutePolyline />}
-        {mapLayers.hotspot && <HotspotMarkers />}{" "}
-        {/* 핫스팟도 라우트 레이어에 포함 */}
+        {mapLayers.hotspot && <HotspotMarkers />}
         {mapLayers.isochrone && <IsochronePolygon />}
         {mapLayers.cctv && (
           <CCTVMarkers
             onCenterChange={(latlng) => panToWithOffset(latlng.lat, latlng.lng)}
-            // purposeFilter={cctvPurposeFilter} // [MODIFY] 3. 목적 필터 미사용
           />
         )}
         {mapLayers.transit && (

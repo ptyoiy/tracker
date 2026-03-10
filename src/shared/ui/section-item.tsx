@@ -32,7 +32,7 @@ export function SectionItem({
         isLast ? "border-none" : "border-b-gray-100",
       )}
     >
-      <AccordionTrigger className="hover:no-underline py-3.5 group">
+      <AccordionTrigger className="hover:no-underline py-3.5 group sticky border-b border-gray-50/50">
         <div className="flex items-center gap-3 text-gray-900 transition-transform group-active:scale-95">
           <div className={cn("p-2.5 rounded-xl", iconBgClass)}>{icon}</div>
           <span className="font-bold text-[17px]">{title}</span>

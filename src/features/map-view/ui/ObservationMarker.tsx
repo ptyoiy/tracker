@@ -1,8 +1,5 @@
 "use client";
 
-import { useAtom } from "jotai";
-import { Clock, MapPin, X } from "lucide-react";
-import { CustomOverlayMap, MapMarker, useMap } from "react-kakao-maps-sdk";
 import { observationsAtom } from "@/features/observation-input/model/atoms";
 import {
   type LocationResult,
@@ -12,6 +9,9 @@ import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
+import { useAtom } from "jotai";
+import { Clock, MapPin, X } from "lucide-react";
+import { CustomOverlayMap, MapMarker, useMap } from "react-kakao-maps-sdk";
 import { activePopupAtom } from "../model/atoms";
 
 type Props = {
@@ -93,14 +93,14 @@ export function ObservationMarker({ index, onCenterChange }: Props) {
       <MapMarker
         position={{ lat: obs.lat, lng: obs.lng }}
         onClick={() => setIsOpen(true)}
-        zIndex={10}
+        zIndex={50}
       />
 
       <CustomOverlayMap
         position={{ lat: obs.lat, lng: obs.lng }}
         xAnchor={0.5}
         yAnchor={1.6}
-        zIndex={11}
+        zIndex={51}
         clickable
       >
         <Button
@@ -116,7 +116,7 @@ export function ObservationMarker({ index, onCenterChange }: Props) {
           position={{ lat: obs.lat, lng: obs.lng }}
           xAnchor={0}
           yAnchor={0}
-          zIndex={100}
+          zIndex={1000}
           clickable
         >
           <dialog

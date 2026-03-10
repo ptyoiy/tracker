@@ -57,14 +57,12 @@ export default function Home() {
         const element = document.getElementById(`section-${activeSection}`);
         if (element && scrollContainerRef.current) {
           // 직접 scrollTo 사용
-          const offsetTop = element.offsetTop;
-          scrollContainerRef.current.scrollTo({
-            top: offsetTop - 1,
+          element.scrollIntoView({
             behavior: "smooth",
           });
           lastScrolledSectionRef.current = activeSection;
         }
-      }, 600); // 애니메이션 완결을 위해 600ms 대기
+      }, 200); // 애니메이션 완결을 위해 200ms 대기
       return () => clearTimeout(timer);
     }
   }, [activeSection]);

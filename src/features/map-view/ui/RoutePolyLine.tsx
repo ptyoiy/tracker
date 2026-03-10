@@ -1,5 +1,6 @@
 import { useSelectedRoutes } from "@/features/route-analysis/lib/useSelectedRoutes";
 import { analysisResultAtom } from "@/features/route-analysis/model/atoms";
+import { cn } from "@/shared/lib/utils";
 import type { RouteLegMode } from "@/types/analyze";
 import { useAtomValue } from "jotai";
 import { Repeat } from "lucide-react";
@@ -104,11 +105,39 @@ export function RoutePolyline() {
                         lng: transitionPoint.lng,
                       }}
                       zIndex={isHovered ? 110 : 30}
+                      xAnchor={0.5}
+                      yAnchor={0.5}
                     >
-                      <div
-                        className={`w-5 h-5 flex items-center justify-center bg-white border-2 border-gray-400 rounded-full shadow-sm box-border -translate-x-1/2 -translate-y-1/2 transition-opacity ${isFaded ? "opacity-30" : "opacity-100"}`}
-                      >
-                        <Repeat className="w-3 h-3 text-gray-500" />
+                      <div className="relative flex items-center justify-center group/transition">
+                        {/* [TASK 8] 이동수단 변경 텍스트 라벨 (항상 표시) */}
+                        <div
+                          className={cn(
+                            "absolute bottom-6 bg-gray-800/90 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded shadow-xl whitespace-nowrap z-[120] pointer-events-none transition-opacity",
+                            isFaded ? "opacity-30" : "opacity-100",
+                          )}
+                        >
+                          {(() => {
+                            const currentLeg = leg;
+                            const nextLeg = route.legs[legIdx + 1];
+                            const getModeName = (l: (typeof route.legs)[0]) => {
+                              if (l.mode === "WALK") return "도보";
+                              if (l.mode === "BUS")
+                                return `${l.route ? `${l.route}번 ` : ""}버스`;
+                              if (l.mode === "SUBWAY")
+                                return `${l.route ? `${l.route} ` : ""}지하철`;
+                              return "이동";
+                            };
+                            return `${getModeName(currentLeg)} → ${getModeName(nextLeg)}`;
+                          })()}
+                        </div>
+                        <div
+                          className={cn(
+                            "w-5 h-5 flex items-center justify-center bg-white border-2 border-gray-400 rounded-full shadow-sm box-border transition-opacity",
+                            isFaded ? "opacity-30" : "opacity-100",
+                          )}
+                        >
+                          <Repeat className="w-3 h-3 text-gray-500" />
+                        </div>
                       </div>
                     </CustomOverlayMap>
                   )}

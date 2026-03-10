@@ -30,8 +30,16 @@ function AccordionTrigger({
   children,
   ...props
 }: React.ComponentProps<typeof AccordionPrimitive.Trigger>) {
+  // Extract sticky-related classes to apply them to the Header instead of the Trigger button
+  const isSticky = className?.includes("sticky");
+  const headerClasses = isSticky
+    ? "sticky top-0 z-10 bg-white/95 backdrop-blur-sm"
+    : "";
+
   return (
-    <AccordionPrimitive.Header className="flex w-full min-w-0">
+    <AccordionPrimitive.Header
+      className={cn("flex w-full min-w-0", headerClasses)}
+    >
       <AccordionPrimitive.Trigger
         data-slot="accordion-trigger"
         className={cn(

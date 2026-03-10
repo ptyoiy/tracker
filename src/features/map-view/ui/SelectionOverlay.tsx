@@ -9,15 +9,16 @@ import {
 } from "@/features/route-analysis/model/atoms";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
-import { useAtom, useAtomValue } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai"; // useSetAtom 추가
 import { Flame, ListFilter, Route as RouteIcon, X } from "lucide-react";
-import { activePopupAtom } from "../model/atoms";
+import { activePopupAtom, mapCenterCommandAtom } from "../model/atoms";
 
 export function SelectionOverlay() {
   const [selectedRouteIds, setSelectedRouteIds] = useAtom(selectedRouteIdsAtom);
   const [activeHotspotId, setActiveHotspotId] = useAtom(activeHotspotIdAtom);
   const lastParams = useAtomValue(lastAnalysisParamsAtom);
   const [activePopup, setActivePopup] = useAtom(activePopupAtom);
+  const setMapCenterCommand = useSetAtom(mapCenterCommandAtom); // 추가
 
   const { data } = useAnalyzeQuery(
     lastParams?.observations,
@@ -177,9 +178,20 @@ export function SelectionOverlay() {
               }
 
               return (
-                <div
+                <button
                   key={route.id}
-                  className="bg-blue-50 border border-blue-200 rounded-lg p-2 flex items-start justify-between"
+                  type="button"
+                  className="bg-blue-50 border border-blue-200 rounded-lg p-2 flex items-start justify-between cursor-pointer hover:bg-blue-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 text-left w-full"
+                  onClick={() => {
+                    const firstLeg = route.legs?.[0];
+                    if (firstLeg?.polyline?.[0]) {
+                      setMapCenterCommand({
+                        lat: firstLeg.polyline[0].lat,
+                        lng: firstLeg.polyline[0].lng,
+                        yOffset: -120, // Drawer 공간 고려
+                      });
+                    }
+                  }}
                 >
                   <div className="flex flex-col gap-1.5 overflow-hidden pr-2 w-full">
                     {/* 첫 번째 줄: (아이콘) 대중교통 이름 */}
@@ -206,21 +218,19 @@ export function SelectionOverlay() {
                       <span>{route.totalDistanceKm.toFixed(1)}km</span>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
+                  <X
+                    className="w-3.5 h-3.5 p-1 shrink-0 rounded text-blue-400 hover:bg-blue-200 hover:text-blue-700 transition-colors -mr-1 -mt-1"
+                    aria-label="제거"
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setSelectedRouteIds((prev) => {
                         const next = new Set(prev);
                         next.delete(route.id);
                         return next;
                       });
                     }}
-                    className="p-1 shrink-0 rounded text-blue-400 hover:bg-blue-200 hover:text-blue-700 transition-colors -mr-1 -mt-1"
-                    aria-label="제거"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+                  />
+                </button>
               );
             })}
           </div>

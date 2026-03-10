@@ -5,6 +5,7 @@ import { observationsAtom } from "@/features/observation-input/model/atoms";
 import {
   nearbyStationsAtom,
   selectedRoutePathAtom,
+  transitLocationAtom, // [TASK 1] 추가
   transitResultAtom,
 } from "@/features/transit-lookup/model/atoms";
 import { BusStationCard } from "@/features/transit-lookup/ui/BusStationCard";
@@ -21,6 +22,7 @@ export function TransitMarkers({
   onCenterChange?: (latlng: { lat: number; lng: number }) => void;
 }) {
   const result = useAtomValue(transitResultAtom);
+  const location = useAtomValue(transitLocationAtom); // [TASK 1] 추가
   const nearbyStations = useAtomValue(nearbyStationsAtom);
   const [selectedRoutePath, setSelectedRoutePath] = useAtom(
     selectedRoutePathAtom,
@@ -229,6 +231,22 @@ export function TransitMarkers({
                 기준 위치에서 {popupStation.distance}m
               </span>
             </div>
+
+            {/* [TASK 1] 대중교통 검색 중심 지점 마커 */}
+            {location && (
+              <CustomOverlayMap
+                position={{ lat: location.lat, lng: location.lng }}
+                yAnchor={1}
+                zIndex={7}
+              >
+                <div className="flex flex-col items-center">
+                  <div className="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg border-2 border-white mb-1">
+                    검색 중심
+                  </div>
+                  <div className="w-4 h-4 bg-blue-600 rounded-full border-2 border-white shadow-md animate-pulse" />
+                </div>
+              </CustomOverlayMap>
+            )}
 
             {nearestRefTime && (
               <div className="text-[10px] text-gray-400 mb-2">
