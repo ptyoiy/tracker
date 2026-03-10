@@ -180,7 +180,7 @@ export function RouteCard({ route, index }: Props) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 text-[12px] mt-0.5">
+        <div className="flex items-center flex-wrap gap-x-2.5 gap-y-1 text-[12px] mt-0.5">
           <span
             className={cn(
               "font-black text-[15px]",

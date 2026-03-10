@@ -1,11 +1,14 @@
 // src/features/transit-lookup/ui/SubwayStationCard.tsx
 "use client";
-
-import { cn } from "@/shared/lib/utils";
+import { apiClient } from "@/shared/api/client";
+import { useQuery } from "@tanstack/react-query";
 import { useAtomValue } from "jotai";
-import { MapPin } from "lucide-react";
+import { Loader2, MapPin } from "lucide-react";
 import { useState } from "react";
-import { transitReferenceTimeAtom } from "../model/atoms";
+import {
+  transitReferenceTimeAtom,
+  transitSelectedModeAtom,
+} from "../model/atoms";
 import type { SubwayLineInfo, SubwayStationResult } from "../model/types";
 import { RouteTraceView } from "./RouteTraceView";
 
@@ -18,7 +21,37 @@ export function SubwayStationCard({
     lineName: string;
   } | null>(null);
   const refTime = useAtomValue(transitReferenceTimeAtom);
+  const selectedMode = useAtomValue(transitSelectedModeAtom);
   const referenceTime = refTime || new Date().toISOString();
+
+  // 도착 정보 lazy-load: 카드가 표시될 때 개별 조회
+  const { data: arrivalData, isLoading: arrivalLoading } = useQuery({
+    queryKey: [
+      "subway-station-arrivals",
+      station.stationName,
+      selectedMode,
+      referenceTime,
+    ],
+    queryFn: async () => {
+      const res = await apiClient
+        .post("subway-station-arrivals", {
+          json: {
+            stationName: station.stationName,
+            mode: selectedMode === "auto" ? undefined : selectedMode,
+            referenceTime,
+          },
+        })
+        .json<{ lines: SubwayLineInfo[] }>();
+      return res.lines;
+    },
+    // 이미 lines 데이터가 있으면 스킵 (직접 조회 결과)
+    enabled: station.lines.length === 0,
+    staleTime: 30000,
+    retry: 1,
+  });
+
+  // 기존 lines가 있으면 사용, 없으면 lazy-load 결과 사용
+  const lines = station.lines.length > 0 ? station.lines : (arrivalData ?? []);
 
   if (traceRoute) {
     return (
@@ -34,13 +67,24 @@ export function SubwayStationCard({
   }
 
   // 방향별로 그룹핑 (상행/내선 vs 하행/외선)
-  const upLines = station.lines.filter(
+  const upLines = lines.filter(
     (l) => l.updnLine === "상행" || l.updnLine === "내선",
   );
-  const downLines = station.lines.filter(
+  const downLines = lines.filter(
     (l) => l.updnLine === "하행" || l.updnLine === "외선",
   );
-  const otherLines = station.lines.filter((l) => !l.updnLine);
+  const otherLines = lines.filter((l) => !l.updnLine);
+
+  if (arrivalLoading) {
+    return (
+      <div className="flex flex-col gap-2">
+        <div className="bg-gray-50 border border-gray-100 rounded-lg p-2 flex items-center justify-center py-4 text-gray-400 gap-2">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span className="text-xs">도착 정보 조회 중...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-2">
@@ -71,7 +115,7 @@ export function SubwayStationCard({
           }
         />
       )}
-      {station.lines.length === 0 && (
+      {lines.length === 0 && (
         <div className="text-xs text-gray-400 py-2 text-center">
           도착 정보 없음
         </div>
@@ -152,12 +196,11 @@ function DirectionGroup({
                             </span>
                           )}
                           <span
-                            className={cn(
-                              "font-semibold",
+                            className={
                               t.minutesFromRef > 0
-                                ? "text-blue-600"
-                                : "text-gray-400",
-                            )}
+                                ? "font-semibold text-blue-600"
+                                : "font-semibold text-gray-400"
+                            }
                           >
                             {t.minutesFromRef > 0
                               ? `${t.minutesFromRef}분 후`

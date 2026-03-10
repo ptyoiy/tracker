@@ -49,7 +49,7 @@ export function ObservationFormFields({ index, form, onRemove }: Props) {
       value={`item-${index}`}
       className="border rounded-xl px-3 bg-white mb-2 last:mb-0 overflow-hidden shadow-sm transition-all hover:border-blue-100"
     >
-      <div className="flex items-center w-full min-w-0">
+      <div className="flex items-center justify-between w-full min-w-0">
         <AccordionTrigger className="hover:no-underline py-4 flex-1 min-w-0">
           <AccordionTriggerContent
             index={index}

@@ -5,11 +5,12 @@ import { observationsAtom } from "@/features/observation-input/model/atoms";
 import {
   nearbyStationsAtom,
   selectedRoutePathAtom,
+  transitLocationAtom,
   transitResultAtom,
 } from "@/features/transit-lookup/model/atoms";
 import { BusStationCard } from "@/features/transit-lookup/ui/BusStationCard";
 import { SubwayStationCard } from "@/features/transit-lookup/ui/SubwayStationCard";
-import { useAtom, useAtomValue } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { MapPinOff, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { CustomOverlayMap, Polyline } from "react-kakao-maps-sdk";
@@ -27,6 +28,7 @@ export function TransitMarkers({
   );
   const observations = useAtomValue(observationsAtom);
   const [activePopup, setActivePopup] = useAtom(activePopupAtom);
+  const setTransitLocation = useSetAtom(transitLocationAtom);
 
   // 디버그 로그
   const busNearby = nearbyStations.filter((s) => s.type === "bus");
@@ -136,12 +138,29 @@ export function TransitMarkers({
     return null;
   })();
 
-  const activeSubwayStation =
-    activePopup?.type === "transit-subway" && result
-      ? result.subway.stations.find(
-          (s) => s.stationCode === activePopup.stationCode,
-        )
-      : null;
+  const activeSubwayStation = (() => {
+    if (activePopup?.type !== "transit-subway") return null;
+    if (result) {
+      const found = result.subway.stations.find(
+        (s) => s.stationCode === activePopup.stationCode,
+      );
+      if (found) return found;
+    }
+    const nearbyMatch = nearbyStations.find(
+      (s) => s.type === "subway" && s.stationId === activePopup.stationCode,
+    );
+    if (nearbyMatch) {
+      return {
+        stationCode: nearbyMatch.stationId,
+        stationName: nearbyMatch.name,
+        lat: nearbyMatch.lat,
+        lng: nearbyMatch.lng,
+        distance: nearbyMatch.distance ?? 0,
+        lines: [],
+      };
+    }
+    return null;
+  })();
 
   const popupStation = activeBusStation || activeSubwayStation;
   const popupType = activeBusStation
@@ -175,6 +194,7 @@ export function TransitMarkers({
                 className="flex flex-col items-center group -mt-1 hover:scale-110 transition-transform opacity-75 hover:opacity-100"
                 onClick={() => {
                   onCenterChange?.({ lat: station.lat, lng: station.lng });
+                  setTransitLocation({ lat: station.lat, lng: station.lng });
                   setActivePopup({
                     type: "transit-bus",
                     stationId: station.stationId,
@@ -210,6 +230,11 @@ export function TransitMarkers({
                 className="flex flex-col items-center group -mt-1 hover:scale-110 transition-transform opacity-75 hover:opacity-100"
                 onClick={() => {
                   onCenterChange?.({ lat: station.lat, lng: station.lng });
+                  setTransitLocation({ lat: station.lat, lng: station.lng });
+                  setActivePopup({
+                    type: "transit-subway",
+                    stationCode: station.stationId, // For fallback UI matching
+                  });
                 }}
               >
                 <div className="bg-orange-400 text-white text-[9px] font-medium px-1 py-0.5 rounded shadow-sm whitespace-nowrap mb-0.5">
@@ -222,69 +247,7 @@ export function TransitMarkers({
             </CustomOverlayMap>
           ))}
 
-      {/* 상세 조회된 버스 정류장 마커 (경로 표시 중 아닐 때만) */}
-      {!hideOtherMarkers &&
-        result?.bus.stations.map((station) => (
-          <CustomOverlayMap
-            key={`bus-${station.stationId}`}
-            position={{ lat: station.lat, lng: station.lng }}
-            yAnchor={1}
-            zIndex={10}
-            clickable
-          >
-            <button
-              type="button"
-              className="flex flex-col items-center group -mt-1 hover:scale-110 transition-transform"
-              onClick={() => {
-                onCenterChange?.({ lat: station.lat, lng: station.lng });
-                setActivePopup({
-                  type: "transit-bus",
-                  stationId: station.stationId,
-                });
-              }}
-            >
-              {/* [MODIFY] 3. 버스 정류장 마커에서 이름 숨김
-              <div className="bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap mb-0.5">
-                {station.stationName}
-              </div>
-              */}
-              <div className="w-5 h-5 bg-white border-2 border-blue-500 rounded-full flex items-center justify-center shadow-md relative z-10">
-                <span className="text-[10px]">🚌</span>
-              </div>
-            </button>
-          </CustomOverlayMap>
-        ))}
-
-      {/* 상세 조회된 지하철역 마커 (경로 표시 중 아닐 때만) */}
-      {!hideOtherMarkers &&
-        result?.subway.stations.map((station) => (
-          <CustomOverlayMap
-            key={`subway-${station.stationCode}`}
-            position={{ lat: station.lat, lng: station.lng }}
-            yAnchor={1}
-            zIndex={11}
-            clickable
-          >
-            <button
-              type="button"
-              className="flex flex-col items-center group -mt-1 hover:scale-110 transition-transform"
-              onClick={() => {
-                onCenterChange?.({ lat: station.lat, lng: station.lng });
-                setActivePopup({
-                  type: "transit-subway",
-                  stationCode: station.stationCode,
-                });
-              }}
-            >
-              <div className="bg-orange-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap mb-0.5">
-                {station.stationName}역
-              </div>
-              <div className="w-5 h-5 bg-white border-2 border-orange-500 rounded-full flex items-center justify-center shadow-md relative z-10">
-                <span className="text-[10px]">🚇</span>
-              </div>
-            </button>
-          </CustomOverlayMap>
-        ))}
+      {/* [MODIFY] 상세 조회된 버스 정류장 / 지하철역 마커는 불명확한 마커 복제를 유발하므로 더 이상 그리지 않습니다 (관측 기반 nearbyStations만 표시) */}
 
       {/* 팝업 오버레이 (마커는 숨겨도 팝업은 유지) */}
       {popupStation && popupType && (

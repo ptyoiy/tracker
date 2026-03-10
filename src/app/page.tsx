@@ -57,7 +57,7 @@ export default function Home() {
         if (element) {
           element.scrollIntoView({ behavior: "smooth", block: "start" });
         }
-      }, 100);
+      }, 350);
       return () => clearTimeout(timer);
     }
   }, [activeSection]);

@@ -31,11 +31,11 @@ function AccordionTrigger({
   ...props
 }: React.ComponentProps<typeof AccordionPrimitive.Trigger>) {
   return (
-    <AccordionPrimitive.Header className="flex w-full">
+    <AccordionPrimitive.Header className="flex w-full min-w-0">
       <AccordionPrimitive.Trigger
         data-slot="accordion-trigger"
         className={cn(
-          "focus-visible:ring-ring flex flex-1 items-center justify-between py-4 text-left text-sm font-medium transition-all hover:underline focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&[data-state=open]>svg]:rotate-180",
+          "focus-visible:ring-ring flex flex-1 items-center justify-between py-4 text-left text-sm font-medium transition-all hover:underline focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&[data-state=open]>svg]:rotate-180 min-w-0",
           className,
         )}
         {...props}
@@ -68,7 +68,7 @@ function AccordionTriggerContent({
   watchAddress,
 }: AccordionTriggerContentProps) {
   return (
-    <div className="flex items-center justify-between w-full pr-2">
+    <div className="flex items-center justify-between w-full pr-2 min-w-0">
       {/* Left: Index & Time */}
       <div className="flex items-center gap-3 shrink-0">
         <span className="shrink-0 flex items-center justify-center w-6 h-6 text-[10px] font-black bg-gray-900 text-white rounded-md">
@@ -82,7 +82,7 @@ function AccordionTriggerContent({
       </div>
 
       {/* Right: Label (Place) & Address - Pushed to right */}
-      <div className="flex-1 flex flex-col items-end min-w-0 ml-4 text-right">
+      <div className="flex-1 flex flex-col items-start justify-center min-w-0 ml-4 text-left w-full h-full">
         <span className="text-[14px] font-black text-gray-900 truncate w-full">
           {watchLabel || "장소 미지정"}
         </span>
@@ -114,8 +114,8 @@ function AccordionContent({
 
 export {
   Accordion,
+  AccordionContent,
   AccordionItem,
   AccordionTrigger,
   AccordionTriggerContent,
-  AccordionContent,
 };

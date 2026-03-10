@@ -111,11 +111,11 @@ export function RouteListPanel() {
                 isStale && "hover:border-orange-100 bg-gray-50/30",
               )}
             >
-              <AccordionTrigger className="hover:no-underline py-4">
-                <div className="flex items-center justify-between w-full pr-2">
+              <AccordionTrigger className="hover:no-underline py-4 min-w-0">
+                <div className="flex items-center justify-between w-full pr-2 min-w-0">
                   {/* Left: Segment Info */}
                   <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
                       <div className="flex items-center gap-1 shrink-0">
                         <span className="w-5 h-5 flex-shrink-0 flex items-center justify-center bg-gray-900 text-white text-[10px] font-black rounded-md">
                           {idx + 1}

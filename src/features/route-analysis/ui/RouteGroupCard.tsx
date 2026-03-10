@@ -170,7 +170,7 @@ export function RouteGroupCard({ group, candidateRoutes }: Props) {
                       </span>
                     )}
                   </span>
-                  <div className="flex items-center gap-1.5 text-[10px] text-gray-500 font-medium mt-1">
+                  <div className="flex items-center flex-wrap gap-x-1.5 gap-y-1 text-[10px] text-gray-500 font-medium mt-1">
                     <span className="font-bold text-gray-700">
                       {duration}분
                     </span>

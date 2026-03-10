@@ -1,10 +1,10 @@
-import type React from "react";
 import { cn } from "@/shared/lib/utils";
 import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/shared/ui/accordion";
+import type React from "react";
 
 interface SectionItemProps {
   value: string;
@@ -17,8 +17,8 @@ interface SectionItemProps {
 
 export function SectionItem({
   value,
-  title,
   icon,
+  title,
   iconBgClass,
   children,
   isLast = false,
@@ -27,7 +27,10 @@ export function SectionItem({
     <AccordionItem
       value={value}
       id={`section-${value}`}
-      className={cn(isLast ? "border-none" : "border-b-gray-100")}
+      className={cn(
+        "scroll-mt-[64px]",
+        isLast ? "border-none" : "border-b-gray-100",
+      )}
     >
       <AccordionTrigger className="hover:no-underline py-3.5 group">
         <div className="flex items-center gap-3 text-gray-900 transition-transform group-active:scale-95">

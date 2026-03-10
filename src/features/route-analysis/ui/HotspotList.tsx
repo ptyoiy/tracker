@@ -129,7 +129,12 @@ export function HotspotList({ segmentId }: Props) {
                 </span>
               </div>
               <div className="text-[11px] font-bold text-gray-800 mt-0.5">
-                {hot.coveredRouteIds.length}개 경로 통과
+                {hot.coveredRouteIds.length}/
+                {hasSelection
+                  ? selectedSet.size
+                  : (data?.segments.find((s) => s.id === segmentId)
+                      ?.candidateRoutes.length ?? allHotspots.length)}{" "}
+                경로 중복
               </div>
               {hot.isSelectedBased && (
                 <div className="text-[9px] text-blue-500 font-bold mt-0.5">
