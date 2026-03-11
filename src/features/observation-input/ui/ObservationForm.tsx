@@ -2,6 +2,7 @@
 "use client";
 
 import { useIsochrone } from "@/features/map-view/lib/useIsochrone";
+import { isochroneSelectionAtom } from "@/features/map-view/model/atoms";
 import {
   analysisResultAtom,
   lastAnalysisParamsAtom,
@@ -54,6 +55,7 @@ export function ObservationForm() {
   const setActiveSection = useSetAtom(activeSectionAtom);
   const setSnap = useSetAtom(bottomSheetSnapAtom);
   const { computeIsochrone } = useIsochrone();
+  const setIsochroneSelection = useSetAtom(isochroneSelectionAtom);
 
   const isInternalUpdate = useRef(false);
 
@@ -195,6 +197,10 @@ export function ObservationForm() {
     };
 
     append(newObs);
+    setIsochroneSelection((prev) => ({
+      ...prev,
+      observationIndex: fields.length,
+    }));
   };
 
   const handleRemove = (index: number) => {
